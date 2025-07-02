@@ -8,6 +8,9 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcryptjs');
 const app = express();
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
+const sharedSession = require('express-socket.io-session');
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URL || 'mongodb+srv://hephzibarsamuel:sHFaJEdlFlDCaQwb@contact-gain.cbtkalw.mongodb.net/?retryWrites=true&w=majority&appName=Contact-Gain', {
@@ -19,12 +22,8 @@ mongoose.connect(process.env.MONGO_URL || 'mongodb+srv://hephzibarsamuel:sHFaJEd
   })
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Middleware
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(session({
+// Session configuration
+const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'e24c9bf7d58a4c3e9f1a6b8c7d3e2f4981a0b3c4d5e6f7a8b9c0d1e2f3a4b5c6',
   resave: false,
   saveUninitialized: false,
@@ -32,7 +31,20 @@ app.use(session({
     secure: process.env.LINODE_ENV === 'production', 
     maxAge: 24 * 60 * 60 * 1000 
   }
+});
+
+app.use(sessionMiddleware);
+
+// Share session with Socket.IO
+io.use(sharedSession(sessionMiddleware, {
+  autoSave: true
 }));
+
+// Middleware
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -41,7 +53,15 @@ const userSchema = new mongoose.Schema({
   username: { type: String, unique: true, required: true },
   password: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
-  status: { type: String, enum: ['active', 'suspended', 'banned'], default: 'active' }
+  status: { type: String, enum: ['active', 'suspended', 'banned'], default: 'active' },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  online: { type: Boolean, default: false },
+  profile: {
+    phone: String,
+    bio: String,
+    picture: String
+  },
+  privateMessaging: { type: Boolean, default: true }
 });
 
 const sessionSchema = new mongoose.Schema({
@@ -71,10 +91,47 @@ const downloadSchema = new mongoose.Schema({
   error: { type: String }
 });
 
+const messageSchema = new mongoose.Schema({
+  content: { type: String, required: true },
+  sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  group: { type: String, default: 'main' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date },
+  deleted: { type: Boolean, default: false },
+  deletedBy: { type: String, enum: ['user', 'admin'] },
+  pinned: { type: Boolean, default: false },
+  replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' }
+});
+
+const groupSchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true },
+  description: { type: String },
+  members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  createdAt: { type: Date, default: Date.now },
+  profilePicture: String
+});
+
 const User = mongoose.model('User', userSchema);
 const Session = mongoose.model('Session', sessionSchema);
 const Contact = mongoose.model('Contact', contactSchema);
 const Download = mongoose.model('Download', downloadSchema);
+const Message = mongoose.model('Message', messageSchema);
+const Group = mongoose.model('Group', groupSchema);
+
+// Create default group if not exists
+async function createDefaultGroup() {
+  const defaultGroup = await Group.findOne({ name: 'Community' });
+  if (!defaultGroup) {
+    const newGroup = new Group({
+      name: 'Community',
+      description: 'Main community group for all users',
+      members: []
+    });
+    await newGroup.save();
+    console.log('Default community group created');
+  }
+}
 
 // Passport Configuration
 passport.use(new LocalStrategy(async (username, password, done) => {
@@ -110,15 +167,210 @@ const isAuthenticated = (req, res, next) => {
 
 // Admin Middleware
 const isAdmin = (req, res, next) => {
-  if (req.session.isAdmin) return next();
+  if (req.user && req.user.role === 'admin') return next();
   res.redirect('/admin/login');
 };
+
+// Socket.IO Connection
+io.on('connection', (socket) => {
+  console.log('a user connected');
+  
+  // Update user online status
+  if (socket.handshake.session.passport && socket.handshake.session.passport.user) {
+    const userId = socket.handshake.session.passport.user;
+    User.findByIdAndUpdate(userId, { online: true }, { new: true })
+      .then(user => {
+        io.emit('user status', { userId, online: true });
+      });
+  }
+
+  // Handle chat messages
+  socket.on('chat message', async (msg) => {
+    try {
+      const userId = socket.handshake.session.passport.user;
+      const user = await User.findById(userId);
+      
+      // Check if user is banned or suspended
+      if (user.status !== 'active') return;
+      
+      // Create message
+      const message = new Message({
+        content: msg.content,
+        sender: userId,
+        group: msg.group,
+        replyTo: msg.replyTo
+      });
+      
+      const savedMessage = await message.save();
+      const populatedMessage = await Message.findById(savedMessage._id).populate('sender');
+      
+      io.emit('chat message', populatedMessage);
+    } catch (err) {
+      console.error('Error saving message:', err);
+    }
+  });
+
+  // Handle private messages
+  socket.on('private message', async (data) => {
+    try {
+      const senderId = socket.handshake.session.passport.user;
+      const sender = await User.findById(senderId);
+      
+      // Check if sender is allowed to send private messages
+      if (sender.status !== 'active' || !sender.privateMessaging) return;
+      
+      const receiver = await User.findById(data.receiver);
+      if (!receiver || !receiver.privateMessaging) return;
+      
+      // Create private message
+      const message = new Message({
+        content: data.content,
+        sender: senderId,
+        receiver: data.receiver,
+        replyTo: data.replyTo
+      });
+      
+      const savedMessage = await message.save();
+      const populatedMessage = await Message.findById(savedMessage._id).populate('sender');
+      
+      io.to(data.receiver).emit('private message', populatedMessage);
+      socket.emit('private message', populatedMessage);
+    } catch (err) {
+      console.error('Error saving private message:', err);
+    }
+  });
+
+  // Handle message deletion
+  socket.on('delete message', async (msgId) => {
+    try {
+      const userId = socket.handshake.session.passport.user;
+      const user = await User.findById(userId);
+      const message = await Message.findById(msgId).populate('sender');
+      
+      if (!message) return;
+      
+      // Check permissions
+      if (user.role === 'admin' || message.sender._id.equals(userId)) {
+        message.deleted = true;
+        message.deletedBy = user.role === 'admin' ? 'admin' : 'user';
+        await message.save();
+        
+        io.emit('message deleted', { 
+          id: msgId, 
+          deletedBy: message.deletedBy 
+        });
+      }
+    } catch (err) {
+      console.error('Error deleting message:', err);
+    }
+  });
+
+  // Handle message editing
+  socket.on('edit message', async (data) => {
+    try {
+      const userId = socket.handshake.session.passport.user;
+      const user = await User.findById(userId);
+      const message = await Message.findById(data.id).populate('sender');
+      
+      if (!message) return;
+      
+      // Check permissions
+      if (user.role === 'admin' || message.sender._id.equals(userId)) {
+        message.content = data.content;
+        message.updatedAt = new Date();
+        await message.save();
+        
+        io.emit('message edited', message);
+      }
+    } catch (err) {
+      console.error('Error editing message:', err);
+    }
+  });
+
+  // Handle pin/unpin messages
+  socket.on('toggle pin', async (msgId) => {
+    try {
+      const userId = socket.handshake.session.passport.user;
+      const user = await User.findById(userId);
+      
+      if (user.role !== 'admin') return;
+      
+      const message = await Message.findById(msgId);
+      if (!message) return;
+      
+      message.pinned = !message.pinned;
+      await message.save();
+      
+      io.emit('message pinned', message);
+    } catch (err) {
+      console.error('Error toggling pin:', err);
+    }
+  });
+
+  // Handle disconnection
+  socket.on('disconnect', async () => {
+    console.log('user disconnected');
+    if (socket.handshake.session.passport && socket.handshake.session.passport.user) {
+      const userId = socket.handshake.session.passport.user;
+      await User.findByIdAndUpdate(userId, { online: false });
+      io.emit('user status', { userId, online: false });
+    }
+  });
+});
 
 // Routes
 app.get('/', (req, res) => res.render('index'));
 
 app.get('/login', (req, res) => res.render('login'));
 app.get('/signup', (req, res) => res.render('signup'));
+
+// Community Chat
+app.get('/chat', isAuthenticated, async (req, res) => {
+  try {
+    // Add user to default group
+    const group = await Group.findOne({ name: 'Community' });
+    if (!group.members.includes(req.user._id)) {
+      group.members.push(req.user._id);
+      await group.save();
+    }
+    
+    // Get last 50 messages
+    const messages = await Message.find({ group: 'main', deleted: false })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .populate('sender')
+      .populate('replyTo');
+    
+    // Get online users
+    const onlineUsers = await User.find({ online: true, status: 'active' });
+    
+    res.render('chat', { 
+      user: req.user, 
+      messages: messages.reverse(),
+      onlineUsers,
+      group
+    });
+  } catch (err) {
+    console.error('Chat error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// User Profile
+app.get('/profile/:userId', isAuthenticated, async (req, res) => {
+  try {
+    const profileUser = await User.findById(req.params.userId);
+    if (!profileUser) return res.status(404).send('User not found');
+    
+    res.render('profile', {
+      currentUser: req.user,
+      profileUser
+    });
+  } catch (err) {
+    console.error('Profile error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
 
 // Terminal (Dashboard)
 app.get('/terminal', isAuthenticated, async (req, res) => {
@@ -135,7 +387,7 @@ app.get('/terminal', isAuthenticated, async (req, res) => {
       sessions,
       stats: {
         totalContacts,
-        totalSessions: activeSessions, // Updated to show active sessions as per template label
+        totalSessions: activeSessions,
         avgContacts,
         totalDownloads
       }
@@ -158,7 +410,7 @@ app.get('/admin', isAdmin, async (req, res) => {
     const expiredOrDeletedSessions = await Session.countDocuments({ $or: [{ status: 'expired' }, { status: 'deleted' }] });
     const totalContacts = await Contact.countDocuments();
     const sessionsWithWhatsapp = await Session.countDocuments({ whatsappLink: { $ne: null } });
-    const sessions = await Session.find().sort({ createdAt: -1 }); // Fetch all sessions for "Manage Sessions"
+    const sessions = await Session.find().sort({ createdAt: -1 });
     const recentSessions = await Session.find().sort({ createdAt: -1 }).limit(5).populate('userId');
     const recentDownloads = await Download.find().sort({ timestamp: -1 }).limit(5);
     const users = await User.find();
@@ -172,7 +424,7 @@ app.get('/admin', isAdmin, async (req, res) => {
       recentSessions,
       recentDownloads,
       users,
-      sessions // Pass all sessions for "Manage Sessions" section
+      sessions
     });
   } catch (err) {
     console.error('Admin dashboard error:', err);
@@ -188,16 +440,13 @@ app.get('/session/:sessionId', async (req, res) => {
     if (!sessionData) {
       return res.status(404).send('Session not found.');
     }
-    // Check if session is expired and update status if necessary
     if (Date.now() > sessionData.expiresAt && sessionData.status !== 'expired') {
       sessionData.status = 'expired';
       await sessionData.save();
     }
-    // Calculate remaining time
     const msLeft = sessionData.expiresAt - Date.now();
     const totalSeconds = msLeft > 0 ? Math.floor(msLeft / 1000) : 0;
 
-    // Get recommended sessions (last 5 active sessions excluding current)
     const recommendedSessions = await Session.find({ 
       sessionId: { $ne: sessionId },
       expiresAt: { $gt: new Date() },
@@ -254,13 +503,45 @@ app.post('/admin/delete-session/:sessionId', isAdmin, async (req, res) => {
   }
 });
 
+// Admin Update User Role
+app.post('/admin/update-role/:userId', isAdmin, async (req, res) => {
+  try {
+    const { role } = req.body;
+    await User.findByIdAndUpdate(req.params.userId, { role });
+    res.redirect('/admin');
+  } catch (err) {
+    console.error('Update role error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// Admin Toggle Private Messaging
+app.post('/admin/toggle-pm/:userId', isAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    user.privateMessaging = !user.privateMessaging;
+    await user.save();
+    res.redirect('/admin');
+  } catch (err) {
+    console.error('Toggle PM error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
 // User Signup
 app.post('/signup', async (req, res) => {
   try {
-    const existingUser = await User.findOne({ username: req.body.username });
+    const { username, password, confirmPassword } = req.body;
+    
+    if (password !== confirmPassword) {
+      return res.render('signup', { error: 'Passwords do not match' });
+    }
+    
+    const existingUser = await User.findOne({ username });
     if (existingUser) return res.render('signup', { error: 'Username already exists' });
-    const hashedPassword = await bcrypt.hash(req.body.password, 10);
-    const user = new User({ username: req.body.username, password: hashedPassword });
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = new User({ username, password: hashedPassword });
     await user.save();
     res.redirect('/login');
   } catch (err) {
@@ -291,8 +572,11 @@ app.get('/admin/login', (req, res) => {
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-    req.session.isAdmin = true;
-    res.redirect('/admin');
+    // Create admin session
+    req.login({ username, role: 'admin' }, (err) => {
+      if (err) return res.status(500).send('Login error');
+      res.redirect('/admin');
+    });
   } else {
     res.render('admin-login', { error: 'Invalid credentials' });
   }
@@ -342,7 +626,6 @@ app.post('/session/:sessionId/contact', async (req, res) => {
     const contact = new Contact({ sessionId, name, phone });
     await contact.save();
 
-    // Update contact count
     sessionData.contactCount += 1;
     await sessionData.save();
 
@@ -362,7 +645,6 @@ app.get('/session/:sessionId/download', async (req, res) => {
       return res.status(404).send('Session not found.');
     }
 
-    // Update download count
     sessionData.downloadCount += 1;
     await sessionData.save();
 
@@ -380,7 +662,6 @@ END:VCARD
 
     const fileName = `${sessionData.groupName.replace(/[^a-z0-9]/gi, '_')}_${sessionId}.vcf`;
 
-    // Record download
     const download = new Download({
       sessionId,
       status: 'success'
@@ -393,7 +674,6 @@ END:VCARD
   } catch (err) {
     console.error('Download error:', err);
 
-    // Record failed download
     const download = new Download({
       sessionId,
       status: 'failed',
@@ -429,6 +709,7 @@ app.post('/admin/ban-user/:userId', isAdmin, async (req, res) => {
 
 // Start Server
 mongoose.connection.once('open', () => {
+  createDefaultGroup();
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  http.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });
