@@ -356,7 +356,7 @@
       
       let messageHTML = `
         <div class="message ${isSelf ? 'self' : ''}">
-          <img src="/images/default-avatar.png" alt="Avatar" class="message-avatar">
+          <img src="${message.userId.avatar || '/images/default-avatar.png'}" alt="Avatar" class="message-avatar">
           <div class="message-content">
             <div class="message-header">
               <span class="message-username">
@@ -521,4 +521,4 @@
     window.onload = scrollToBottom;
   </script>
 </body>
-</html> 
+</html>
