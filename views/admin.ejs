@@ -171,6 +171,7 @@
                         <th>Group Name</th>
                         <th>Created At</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -180,6 +181,11 @@
                             <td><%= session.groupName %></td>
                             <td><%= session.createdAt.toLocaleString() %></td>
                             <td><%= session.status %></td>
+                            <td>
+                                <a href="/chat/<%= session.sessionId %>" class="action-btn" style="background: var(--primary); color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 4px;">
+                                    <i class="fas fa-comments"></i> Join Chat
+                                </a>
+                            </td>
                         </tr>
                     <% }); %>
                 </tbody>
@@ -222,7 +228,11 @@
                 <tbody>
                     <% users.forEach(user => { %>
                         <tr>
-                            <td><%= user.username %></td>
+                            <td>
+                                <a href="/profile/<%= user._id %>" style="color: var(--primary); text-decoration: none;">
+                                    <%= user.username %>
+                                </a>
+                            </td>
                             <td><%= user.status %></td>
                             <td><%= user.isAdmin ? 'Yes' : 'No' %></td>
                             <td>
@@ -243,8 +253,6 @@
                     <% }); %>
                 </tbody>
             </table>
-            
-            <a href="/admin-chat" class="admin-chat-link">Go to Chat Moderation</a>
         </div>
     </div>
 
