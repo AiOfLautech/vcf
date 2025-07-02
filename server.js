@@ -13,6 +13,7 @@ const multer = require('multer');
 const sharp = require('sharp');
 const OpenAI = require('openai');
 const MongoStore = require('connect-mongo');
+const fs = require('fs');
 
 const app = express();
 const httpServer = createServer(app);
@@ -37,18 +38,18 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// FIX: Use separate collection for Express sessions
+// Fix: Use separate collection for Express sessions
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,  // Changed to true to fix session issues
   cookie: { 
     secure: process.env.NODE_ENV === 'production', 
     maxAge: 24 * 60 * 60 * 1000 
   },
   store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URL,
-    collectionName: 'express_sessions', // FIXED: Separate collection
+    collectionName: 'express_sessions', // Fixed: Separate collection
     ttl: 24 * 60 * 60 
   })
 }));
@@ -145,7 +146,7 @@ const privateMessageSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model('User', userSchema);
-const Session = mongoose.model('Session', sessionSchema, 'group_sessions'); // FIXED: Custom collection name
+const Session = mongoose.model('Session', sessionSchema, 'group_sessions'); // Fixed: Custom collection name
 const Contact = mongoose.model('Contact', contactSchema);
 const Download = mongoose.model('Download', downloadSchema);
 const Message = mongoose.model('Message', messageSchema);
@@ -180,13 +181,42 @@ passport.deserializeUser(async (id, done) => {
 // Authentication Middleware
 const isAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) return next();
-  if (req.accepts('json')) return res.status(401).json({ error: 'Authentication required' });
   res.redirect('/login');
 };
 
 const isAdmin = (req, res, next) => {
-  if (req.session.isAdmin || (req.user && req.user.isAdmin)) return next();
+  if (req.isAuthenticated() && req.user.isAdmin) {
+    return next();
+  }
   res.redirect('/admin/login');
+};
+
+// Ensure admin user exists on startup
+const ensureAdminExists = async () => {
+  const adminUsername = process.env.ADMIN_USERNAME;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  
+  if (!adminUsername || !adminPassword) {
+    console.warn('ADMIN_USERNAME or ADMIN_PASSWORD not set. Skipping admin user creation.');
+    return;
+  }
+  
+  try {
+    let adminUser = await User.findOne({ username: adminUsername });
+    
+    if (!adminUser) {
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      adminUser = new User({
+        username: adminUsername,
+        password: hashedPassword,
+        isAdmin: true
+      });
+      await adminUser.save();
+      console.log('Admin user created');
+    }
+  } catch (err) {
+    console.error('Error creating admin user:', err);
+  }
 };
 
 // Socket.IO Logic
@@ -497,6 +527,12 @@ app.post('/upload-profile-pic', isAuthenticated, upload.single('avatar'), async 
   try {
     if (!req.file) return res.status(400).send('No file uploaded');
     
+    // Create uploads directory if not exists
+    const uploadDir = path.join(__dirname, 'public', 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    
     // Process image
     const buffer = await sharp(req.file.buffer)
       .resize(300, 300)
@@ -504,9 +540,9 @@ app.post('/upload-profile-pic', isAuthenticated, upload.single('avatar'), async 
       .toBuffer();
     
     const filename = `${req.user._id}-${Date.now()}.png`;
-    const filepath = path.join(__dirname, 'public', 'uploads', filename);
+    const filepath = path.join(uploadDir, filename);
     
-    require('fs').writeFileSync(filepath, buffer);
+    fs.writeFileSync(filepath, buffer);
     
     // Update user
     await User.findByIdAndUpdate(req.user._id, { avatar: `/uploads/${filename}` });
@@ -645,7 +681,7 @@ app.post('/signup', async (req, res) => {
 
 // User Login
 app.post('/login', passport.authenticate('local', {
-  successRedirect: '/',
+  successRedirect: '/terminal',
   failureRedirect: '/login',
   failureFlash: false
 }));
@@ -658,15 +694,11 @@ app.get('/logout', (req, res) => {
 });
 
 // Admin Login
-app.post('/admin/login', (req, res) => {
-  const { username, password } = req.body;
-  if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-    req.session.isAdmin = true;
-    res.redirect('/admin');
-  } else {
-    res.render('admin-login', { error: 'Invalid credentials' });
-  }
-});
+app.post('/admin/login', passport.authenticate('local', {
+  successRedirect: '/admin',
+  failureRedirect: '/admin/login',
+  failureFlash: false
+}));
 
 // Create Session with collision handling
 app.post('/create-session', isAuthenticated, async (req, res) => {
@@ -796,8 +828,10 @@ END:VCARD
   }
 });
 
-// Start Server
-mongoose.connection.once('open', () => {
-  const PORT = process.env.PORT || 3000;
-  httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Create admin user on startup and start server
+ensureAdminExists().then(() => {
+  mongoose.connection.once('open', () => {
+    const PORT = process.env.PORT || 3000;
+    httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  });
 });
