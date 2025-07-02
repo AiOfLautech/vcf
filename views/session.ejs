@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= groupName %> | Contact Session</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #0ea5e9;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+            --card-bg: #ffffff;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.1));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: var(--card-shadow);
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+            overflow: hidden;
+        }
+        .session-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        .session-id {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #f1f5f9;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+        }
+        .timer {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            font-weight: 600;
+        }
+        #countdown {
+            font-family: 'Courier New', monospace;
+            color: var(--primary);
+            letter-spacing: 2px;
+        }
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+        .alert.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--secondary);
+            color: #065f46;
+        }
+        .alert.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            color: #b91c1c;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 1rem 1.2rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            outline: none;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+        .submit-btn:hover {
+            background: var(--primary-light);
+        }
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .whatsapp-btn, .download-link {
+            padding: 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            font-weight: 500;
+        }
+        .whatsapp-btn {
+            background: #25D366;
+        }
+        .download-link {
+            background: var(--dark);
+            display: none;
+        }
+        .recommended-sessions {
+            margin-top: 2rem;
+        }
+        .recommended-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .session-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+        .session-card {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .session-card:hover {
+            background: #e2e8f0;
+            transform: translateY(-3px);
+        }
+        .session-card h3 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .session-card a {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--primary);
+            border-radius: 6px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: var(--gray);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            color: var(--gray);
+            cursor: pointer;
+        }
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .modal-steps {
+            text-align: left;
+            margin: 1.5rem 0;
+        }
+        .modal-steps li {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        .modal-btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            background: var(--primary);
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        @media (max-width: 576px) {
+            .container {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="session-header">
+            <div class="session-id">ID: <%= sessionId %></div>
+            <h1><i class="fas fa-users"></i> <%= groupName %></h1>
+        </div>
+        <div class="timer">
+            <i class="fas fa-clock"></i>
+            <span id="countdown">00:00:00</span>
+        </div>
+        <div class="alert" id="alert"></div>
+        <form id="contactForm">
+            <div class="form-group">
+                <input type="text" id="name" placeholder="Your Full Name" required>
+            </div>
+            <div class="form-group">
+                <input type="tel" id="phone" placeholder="Phone Number (e.g., +2348123456789)" required>
+            </div>
+            <button type="submit" class="submit-btn">
+                <i class="fas fa-user-plus"></i> Add My Contact
+            </button>
+        </form>
+        <div class="action-buttons">
+            <% if (whatsappLink) { %>
+                <a href="<%= whatsappLink %>" target="_blank" class="whatsapp-btn">
+                    <i class="fab fa-whatsapp"></i> Join WhatsApp Group
+                </a>
+            <% } %>
+            <a href="/session/<%= sessionId %>/download" class="download-link" id="downloadLink">
+                <i class="fas fa-download"></i> Download Contacts
+            </a>
+        </div>
+        <% if (recommendedSessions.length > 0) { %>
+            <div class="recommended-sessions">
+                <div class="recommended-title">
+                    <i class="fas fa-fire"></i> Recommended Sessions
+                </div>
+                <div class="session-grid">
+                    <% recommendedSessions.forEach(session => { %>
+                        <div class="session-card">
+                            <h3><%= session.groupName %></h3>
+                            <p><%= Math.floor((session.expiresAt - Date.now()) / 60000) %> min left</p>
+                            <a href="/session/<%= session.sessionId %>" target="_blank">Join Session</a>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+        <% } %>
+        <div class="footer">
+            <p>Powered by <strong>Contact Gain</strong></p>
+        </div>
+        <div class="modal" id="successModal">
+            <div class="modal-content">
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+                <h2 class="modal-title">
+                    <i class="fas fa-check-circle"></i> Contact Added!
+                </h2>
+                <p>Your contact information has been successfully added to the session.</p>
+                <div class="modal-steps">
+                    <p><strong>How to import contacts:</strong></p>
+                    <ol>
+                        <li>After the session ends, download the VCF file</li>
+                        <li>On your phone, open the Contacts app</li>
+                        <li>Go to Settings > Import/Export</li>
+                        <li>Select "Import from storage" and choose the VCF file</li>
+                        <li>All contacts will be added to your address book</li>
+                    </ol>
+                </div>
+                <p>You'll be redirected to the group in <span id="redirectCountdown">5</span> seconds</p>
+                <% if (whatsappLink) { %>
+                    <a href="<%= whatsappLink %>" class="modal-btn">Go to Group Now</a>
+                <% } %>
+            </div>
+        </div>
+    </div>
+    <script>
+        let remainingSeconds = <%= totalSeconds %>;
+        const countdownEl = document.getElementById('countdown');
+        const downloadLink = document.getElementById('downloadLink');
+        const alertBox = document.getElementById('alert');
+        const successModal = document.getElementById('successModal');
+        const redirectCountdown = document.getElementById('redirectCountdown');
+
+        function showAlert(message, type = 'success') {
+            alertBox.textContent = message;
+            alertBox.className = 'alert ' + type;
+            alertBox.style.display = 'block';
+            setTimeout(() => alertBox.style.display = 'none', 3000);
+        }
+
+        function showModal() {
+            successModal.style.display = 'flex';
+            let seconds = 5;
+            redirectCountdown.textContent = seconds;
+            const countdownInterval = setInterval(() => {
+                seconds--;
+                redirectCountdown.textContent = seconds;
+                if (seconds < 0) {
+                    clearInterval(countdownInterval);
+                    <% if (whatsappLink) { %>
+                        window.location.href = '<%= whatsappLink %>';
+                    <% } %>
+                }
+            }, 1000);
+        }
+
+        function closeModal() {
+            successModal.style.display = 'none';
+        }
+
+        function updateCountdown() {
+            if (remainingSeconds <= 0) {
+                countdownEl.textContent = '00:00:00';
+                downloadLink.style.display = 'flex';
+                clearInterval(countdownInterval);
+                return;
+            }
+            const hours = Math.floor(remainingSeconds / 3600);
+            const mins = Math.floor((remainingSeconds % 3600) / 60);
+            const secs = remainingSeconds % 60;
+            countdownEl.textContent = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            remainingSeconds--;
+        }
+
+        updateCountdown();
+        const countdownInterval = setInterval(updateCountdown, 1000);
+
+        document.getElementById('contactForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nameVal = document.getElementById('name').value.trim();
+            const phoneVal = document.getElementById('phone').value.trim();
+            if (!nameVal || !phoneVal) {
+                showAlert('Please enter a valid name and phone number', 'error');
+                return;
+            }
+            try {
+                const response = await fetch('/session/<%= sessionId %>/contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: nameVal, phone: phoneVal })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showModal();
+                    document.getElementById('contactForm').reset();
+                } else {
+                    showAlert(data.error || 'Failed to add contact.', 'error');
+                }
+            } catch (error) {
+                showAlert('Network error. Please try again.', 'error');
+            }
+        });
+
+        document.getElementById('downloadLink').addEventListener('click', (e) => {
+            if (remainingSeconds > 0) {
+                e.preventDefault();
+                showAlert('Download available after timer expires!', 'error');
+            }
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === successModal) closeModal();
+        });
+    </script>
+</body>
+</html>

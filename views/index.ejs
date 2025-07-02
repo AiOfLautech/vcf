@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Session | Contact Gain</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --dark: #1e293b;
+      --light: #f8fafc;
+      --gray: #94a3b8;
+      --card-bg: #ffffff;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.1)), 
+                  url('https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80');
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 2.5rem;
+      box-shadow: var(--card-shadow);
+      width: 100%;
+      max-width: 500px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .logo i {
+      font-size: 2.5rem;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--dark);
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--gray);
+      margin-bottom: 2rem;
+    }
+
+    .input-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--dark);
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 1rem 1.2rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .input-group input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      outline: none;
+    }
+
+    .timer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 1.5rem 0;
+    }
+
+    .timer-option {
+      padding: 1rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    .timer-option:hover {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .timer-option.active {
+      background: rgba(99, 102, 241, 0.1);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    #customTimer {
+      margin-top: 1rem;
+    }
+
+    #customMinutes {
+      width: 100%;
+      margin: 0.5rem 0;
+    }
+
+    #customMinutesInput {
+      width: 100px;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+
+    .create-btn {
+      width: 100%;
+      padding: 1rem;
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+    }
+
+    .create-btn:hover {
+      background: var(--primary-light);
+    }
+
+    .session-link {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      border-radius: 8px;
+      background: #f1f5f9;
+      display: none;
+    }
+
+    .link-box {
+      word-break: break-all;
+      padding: 1rem;
+      background: white;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border: 1px solid #e2e8f0;
+      font-weight: 500;
+    }
+
+    .copy-btn, .dashboard-btn {
+      width: 100%;
+      padding: 0.8rem;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 0.5rem;
+    }
+
+    .copy-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .copy-btn:hover {
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .dashboard-btn {
+      background: var(--primary);
+      border: none;
+      color: white;
+    }
+
+    .dashboard-btn:hover {
+      background: var(--primary-light);
+    }
+
+    .spinner {
+      display: none;
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(99, 102, 241, 0.1);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 1.5rem auto;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 2rem;
+      color: var(--gray);
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 576px) {
+      .container {
+        padding: 1.5rem;
+      }
+      
+      .timer-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <i class="fas fa-bolt"></i>
+    </div>
+    
+    <h1>Create a VCF Session</h1>
+    <p class="subtitle">Collect contacts and grow your network</p>
+    
+    <div class="input-group">
+      <label for="groupName">Group Name</label>
+      <input type="text" id="groupName" placeholder="Enter group name" required>
+    </div>
+    
+    <div class="input-group">
+      <label for="whatsappLink">WhatsApp Group Link (optional)</label>
+      <input type="url" id="whatsappLink" placeholder="https://whatsapp.com/group">
+      <p class="text-sm text-gray-500 mt-1">Participants will be directed here after submitting</p>
+    </div>
+    
+    <div class="input-group">
+      <label>Session Duration</label>
+      <div class="timer-grid">
+        <div class="timer-option" data-time="5">5 Min</div>
+        <div class="timer-option" data-time="10">10 Min</div>
+        <div class="timer-option" data-time="30">30 Min</div>
+        <div class="timer-option" data-time="60">1 Hour</div>
+        <div class="timer-option" data-time="300">5 Hours</div>
+        <div class="timer-option" data-time="1440">24 Hours</div>
+        <div class="timer-option custom" data-time="custom">Custom</div>
+      </div>
+      <div id="customTimer" style="display: none;">
+        <label for="customMinutes">Custom Minutes: <span id="minuteValue">30</span></label>
+        <input type="range" id="customMinutes" min="1" max="1440" value="30">
+        <input type="number" id="customMinutesInput" min="1" max="1440" value="30">
+      </div>
+    </div>
+    
+    <button class="create-btn" id="generateBtn">
+      <i class="fas fa-bolt"></i> Create Session
+    </button>
+    
+    <div class="spinner" id="spinner"></div>
+    
+    <div class="session-link" id="sessionLink">
+      <p>Your session has been created! Share this link:</p>
+      <div class="link-box">
+        <a id="sessionURL" href="#" target="_blank"></a>
+      </div>
+      <button class="copy-btn" id="copyLinkBtn">
+        <i class="fas fa-copy"></i> Copy Link
+      </button>
+      <button class="dashboard-btn" id="dashboardBtn">
+        <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+      </button>
+    </div>
+    
+    <div class="footer">
+      <a href="/login">Login</a>
+      <a href="/signup">Sign Up</a>
+    </div>
+  </div>
+
+  <script>
+    const generateBtn = document.getElementById('generateBtn');
+    const spinner = document.getElementById('spinner');
+    const sessionLinkDiv = document.getElementById('sessionLink');
+    const sessionURL = document.getElementById('sessionURL');
+    const copyLinkBtn = document.getElementById('copyLinkBtn');
+    const dashboardBtn = document.getElementById('dashboardBtn');
+    const timerOptions = document.querySelectorAll('.timer-option');
+    const groupNameInput = document.getElementById('groupName');
+    const customTimerDiv = document.getElementById('customTimer');
+    const customMinutesRange = document.getElementById('customMinutes');
+    const customMinutesInput = document.getElementById('customMinutesInput');
+    const minuteValue = document.getElementById('minuteValue');
+
+    // Timer Selection
+    timerOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        timerOptions.forEach(o => o.classList.remove('active'));
+        option.classList.add('active');
+        customTimerDiv.style.display = option.dataset.time === 'custom' ? 'block' : 'none';
+      });
+    });
+
+    // Sync Custom Timer Inputs
+    customMinutesRange.addEventListener('input', () => {
+      customMinutesInput.value = customMinutesRange.value;
+      minuteValue.textContent = customMinutesRange.value;
+    });
+
+    customMinutesInput.addEventListener('input', () => {
+      let value = Math.max(1, Math.min(1440, customMinutesInput.value));
+      customMinutesInput.value = value;
+      customMinutesRange.value = value;
+      minuteValue.textContent = value;
+    });
+
+    // Form Submission
+    generateBtn.addEventListener('click', async (event) => {
+      event.preventDefault();
+      const groupName = groupNameInput.value.trim();
+      const whatsappLink = document.getElementById('whatsappLink').value.trim();
+      const activeTimer = document.querySelector('.timer-option.active');
+      if (!activeTimer) {
+        alert('Please select a timer');
+        return;
+      }
+      const timer = activeTimer.dataset.time === 'custom' ? customMinutesInput.value : activeTimer.dataset.time;
+      if (!groupName || !timer) {
+        alert('Please fill all required fields and select a timer');
+        return;
+      }
+
+      spinner.style.display = 'block';
+      sessionLinkDiv.style.display = 'none';
+      generateBtn.disabled = true;
+
+      try {
+        const response = await fetch('/create-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ groupName, timer, whatsappLink })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.sessionLink) {
+            sessionURL.href = data.sessionLink;
+            sessionURL.textContent = data.sessionLink;
+            sessionLinkDiv.style.display = 'block';
+            // Optional: Uncomment below to auto-redirect to dashboard
+            // window.location.href = '/terminal';
+          } else {
+            alert('Session creation failed: ' + (data.error || 'Unknown error'));
+          }
+        } else if (response.status === 401) {
+          alert('Please log in to create a session.');
+          window.location.href = '/login';
+        } else {
+          alert('Error: ' + response.statusText);
+        }
+      } catch (error) {
+        alert('Network error. Please check your connection and ensure the server is running.');
+      } finally {
+        spinner.style.display = 'none';
+        generateBtn.disabled = false;
+      }
+    });
+
+    // Copy to Clipboard
+    copyLinkBtn.addEventListener('click', () => {
+      const link = sessionURL.href;
+      navigator.clipboard.writeText(link)
+        .then(() => {
+          copyLinkBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+          setTimeout(() => copyLinkBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Link', 2000);
+        })
+        .catch(() => alert('Could not copy text.'));
+    });
+
+    // Go to Dashboard
+    dashboardBtn.addEventListener('click', () => {
+      window.location.href = '/terminal';
+    });
+
+    // Auto-select 30 min timer
+    document.addEventListener('DOMContentLoaded', () => {
+      const defaultTimer = document.querySelector('[data-time="30"]');
+      if (defaultTimer) defaultTimer.classList.add('active');
+      groupNameInput.focus();
+    });
+  </script>
+</body>
+</html>

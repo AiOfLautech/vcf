@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | VCF Session</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    :root {
+      --primary: #ff007b;
+      --glass: rgba(10, 14, 26, 0.95);
+      --text: #ffffff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+                  url('https://files.catbox.moe/iw8z7o.png') fixed center/cover;
+      color: var(--text);
+      padding: 20px;
+    }
+
+    .container {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      padding: 2.5rem;
+      border-radius: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 50px rgba(255, 0, 123, 0.3);
+      width: 95%;
+      max-width: 600px;
+      text-align: center;
+    }
+
+    h1 {
+      color: var(--primary);
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .home-link {
+      display: inline-block;
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, var(--primary), #ff0062);
+      border-radius: 12px;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .home-link:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 20px rgba(255, 0, 123, 0.4);
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 1.5rem;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      p {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><i class="fas fa-exclamation-triangle"></i> <%= title %></h1>
+    <p><%= message %></p>
+    <a href="/" class="home-link">Return to Home</a>
+  </div>
+</body>
+</html>
