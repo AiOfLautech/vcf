@@ -404,7 +404,7 @@ app.get('/admin', isAdmin, async (req, res) => {
   }
 });
 
-// Chat Interface
+// Chat Interface - FIXED ROUTE
 app.get('/chat/:sessionId', isAuthenticated, async (req, res) => {
   try {
     const sessionId = req.params.sessionId;
@@ -463,7 +463,7 @@ app.get('/chat/:sessionId', isAuthenticated, async (req, res) => {
   }
 });
 
-// User Profile
+// User Profile - FIXED ROUTE
 app.get('/profile/:userId', isAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
