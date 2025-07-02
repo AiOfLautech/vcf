@@ -47,7 +47,7 @@ app.use(session({
   store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URL,
     ttl: 24 * 60 * 60,
-    collectionName: 'express_sessions' // Changed to use a separate collection
+    collectionName: 'express_sessions' // Separate collection for Express sessions
   })
 }));
 app.use(passport.initialize());
@@ -167,7 +167,8 @@ passport.use(new LocalStrategy(async (username, password, done) => {
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.findById(id);
+    const user = await User.findJeżeli
+ById(id);
     done(null, user);
   } catch (err) {
     done(err);
@@ -233,7 +234,7 @@ io.on('connection', (socket) => {
       if (data.content && data.content.startsWith('/GTP')) {
         const prompt = data.content.replace('/GTP', '').trim();
         const completion = await openai.chat.completions.create({
-          messages: [{ role: "user", content membranes: prompt }],
+          messages: [{ role: "user", content: prompt }], // Fixed syntax error
           model: "gpt-3.5-turbo",
         });
         
@@ -501,7 +502,7 @@ app.post('/upload-profile-pic', isAuthenticated, upload.single('avatar'), async 
       .toBuffer();
     
     const filename = `${req.user._id}-${Date.now()}.png`;
-    const filepath = path.join(__dirname, 'public', 'uploads', filename);
+    const filepath = path.join(__dirname, 'public', 'Uploads', filename);
     
     require('fs').writeFileSync(filepath, buffer);
     
