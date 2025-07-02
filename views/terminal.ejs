@@ -407,6 +407,15 @@
       background: #e2e8f0;
     }
 
+    .session-action.chat {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--primary);
+    }
+
+    .session-action.chat:hover {
+      background: rgba(99, 102, 241, 0.2);
+    }
+
     .session-action.download {
       background: rgba(16, 185, 129, 0.1);
       color: var(--secondary);
@@ -467,6 +476,10 @@
         flex-direction: column;
         gap: 0.8rem;
       }
+      
+      .session-actions {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -481,7 +494,7 @@
         </div>
       </div>
       <div class="nav-links">
-        <a href="#" class="nav-link active"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="/terminal" class="nav-link active"><i class="fas fa-chart-line"></i> Dashboard</a>
         <a href="#" class="nav-link"><i class="fas fa-users"></i> Sessions</a>
         <a href="#" class="nav-link"><i class="fas fa-file-contract"></i> Contacts</a>
         <a href="#" class="nav-link"><i class="fas fa-history"></i> History</a>
@@ -612,6 +625,9 @@
                 </a>
                 <a href="/session/<%= session.sessionId %>/download" class="session-action download">
                   <i class="fas fa-download"></i> Download
+                </a>
+                <a href="/chat/<%= session.sessionId %>" class="session-action chat">
+                  <i class="fas fa-comments"></i> Chat
                 </a>
                 <form action="/delete-session/<%= session.sessionId %>" method="POST" style="display:inline;">
                   <button type="submit" class="session-action" style="background: #ef4444; color: white;">
