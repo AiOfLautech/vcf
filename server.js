@@ -19,7 +19,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer);
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URL, {
+mongoose.connect(process.env.MONGO_URL || 'mongodb+srv://hephzibarsamuel:sHFaJEdlFlDCaQwb@contact-gain.cbtkalw.mongodb.net/?retryWrites=true&w=majority&appName=Contact-Gain', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
@@ -37,18 +37,17 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || 'e24c9bf7d58a4c3e9f1a6b8c7d3e2f4981a0b3c4d5e6f7a8b9c0d1e2f3a4b5c6',
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({ 
+    mongoUrl: process.env.MONGO_URL,
+    ttl: 24 * 60 * 60 
+  }),
   cookie: { 
     secure: process.env.NODE_ENV === 'production', 
     maxAge: 24 * 60 * 60 * 1000 
-  },
-  store: MongoStore.create({ 
-    mongoUrl: process.env.MONGO_URL,
-    ttl: 24 * 60 * 60,
-    collectionName: 'express_sessions' // Separate collection for Express sessions
-  })
+  }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -167,8 +166,7 @@ passport.use(new LocalStrategy(async (username, password, done) => {
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.findJeżeli
-ById(id);
+    const user = await User.findById(id);
     done(null, user);
   } catch (err) {
     done(err);
@@ -234,7 +232,7 @@ io.on('connection', (socket) => {
       if (data.content && data.content.startsWith('/GTP')) {
         const prompt = data.content.replace('/GTP', '').trim();
         const completion = await openai.chat.completions.create({
-          messages: [{ role: "user", content: prompt }], // Fixed syntax error
+          messages: [{ role: "user", content: prompt }],
           model: "gpt-3.5-turbo",
         });
         
@@ -406,7 +404,7 @@ app.get('/admin', isAdmin, async (req, res) => {
   }
 });
 
-// Chat Interface
+// Chat Interface - FIXED ROUTE
 app.get('/chat/:sessionId', isAuthenticated, async (req, res) => {
   try {
     const sessionId = req.params.sessionId;
@@ -465,7 +463,7 @@ app.get('/chat/:sessionId', isAuthenticated, async (req, res) => {
   }
 });
 
-// User Profile
+// User Profile - FIXED ROUTE
 app.get('/profile/:userId', isAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
@@ -502,7 +500,7 @@ app.post('/upload-profile-pic', isAuthenticated, upload.single('avatar'), async 
       .toBuffer();
     
     const filename = `${req.user._id}-${Date.now()}.png`;
-    const filepath = path.join(__dirname, 'public', 'Uploads', filename);
+    const filepath = path.join(__dirname, 'public', 'uploads', filename);
     
     require('fs').writeFileSync(filepath, buffer);
     
