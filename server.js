@@ -12,13 +12,14 @@ const { Server } = require('socket.io');
 const multer = require('multer');
 const sharp = require('sharp');
 const OpenAI = require('openai');
+const MongoStore = require('connect-mongo');
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URL || 'mongodb+srv://hephzibarsamuel:sHFaJEdlFlDCaQwb@contact-gain.cbtkalw.mongodb.net/?retryWrites=true&w=majority&appName=Contact-Gain', {
+mongoose.connect(process.env.MONGO_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
@@ -36,14 +37,14 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'e24c9bf7d58a4c3e9f1a6b8c7d3e2f4981a0b3c4d5e6f7a8b9c0d1e2f3a4b5c6',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    secure: process.env.LINODE_ENV === 'production', 
+    secure: process.env.NODE_ENV === 'production', 
     maxAge: 24 * 60 * 60 * 1000 
   },
-  store: require('connect-mongo').create({ 
+  store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URL,
     ttl: 24 * 60 * 60 
   })
