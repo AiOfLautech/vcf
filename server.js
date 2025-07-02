@@ -46,7 +46,8 @@ app.use(session({
   },
   store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URL,
-    ttl: 24 * 60 * 60 
+    ttl: 24 * 60 * 60,
+    collectionName: 'express_sessions' // Changed to use a separate collection
   })
 }));
 app.use(passport.initialize());
@@ -232,7 +233,7 @@ io.on('connection', (socket) => {
       if (data.content && data.content.startsWith('/GTP')) {
         const prompt = data.content.replace('/GTP', '').trim();
         const completion = await openai.chat.completions.create({
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: "user", content membranes: prompt }],
           model: "gpt-3.5-turbo",
         });
         
@@ -404,7 +405,7 @@ app.get('/admin', isAdmin, async (req, res) => {
   }
 });
 
-// Chat Interface - FIXED ROUTE
+// Chat Interface
 app.get('/chat/:sessionId', isAuthenticated, async (req, res) => {
   try {
     const sessionId = req.params.sessionId;
@@ -463,7 +464,7 @@ app.get('/chat/:sessionId', isAuthenticated, async (req, res) => {
   }
 });
 
-// User Profile - FIXED ROUTE
+// User Profile
 app.get('/profile/:userId', isAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
