@@ -7,46 +7,63 @@ const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcryptjs');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
+const multer = require('multer');
+const sharp = require('sharp');
+const OpenAI = require('openai');
+
 const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
-const sharedSession = require('express-socket.io-session');
+const httpServer = createServer(app);
+const io = new Server(httpServer);
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URL || 'mongodb+srv://hephzibarsamuel:sHFaJEdlFlDCaQwb@contact-gain.cbtkalw.mongodb.net/?retryWrites=true&w=majority&appName=Contact-Gain', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-  .then(() => {
-    console.log('MongoDB connected successfully');
-  })
+  .then(() => console.log('MongoDB connected successfully'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Session configuration
-const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET || 'e24c9bf7d58a4c3e9f1a6b8c7d3e2f4981a0b3c4d5e6f7a8b9c0d1e2f3a4b5c6',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: process.env.LINODE_ENV === 'production', 
-    maxAge: 24 * 60 * 60 * 1000 
-  }
+// Configure OpenAI
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
 });
-
-app.use(sessionMiddleware);
-
-// Share session with Socket.IO
-io.use(sharedSession(sessionMiddleware, {
-  autoSave: true
-}));
 
 // Middleware
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'e24c9bf7d58a4c3e9f1a6b8c7d3e2f4981a0b3c4d5e6f7a8b9c0d1e2f3a4b5c6',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.LINODE_ENV === 'production', 
+    maxAge: 24 * 60 * 60 * 1000 
+  },
+  store: require('connect-mongo').create({ 
+    mongoUrl: process.env.MONGO_URL,
+    ttl: 24 * 60 * 60 
+  })
+}));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(express.static('public'));
+
+// Configure Multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only images are allowed'), false);
+    }
+  }
+});
 
 // Schemas and Models
 const userSchema = new mongoose.Schema({
@@ -54,14 +71,11 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   status: { type: String, enum: ['active', 'suspended', 'banned'], default: 'active' },
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
-  online: { type: Boolean, default: false },
-  profile: {
-    phone: String,
-    bio: String,
-    picture: String
-  },
-  privateMessaging: { type: Boolean, default: true }
+  avatar: { type: String },
+  phone: { type: String },
+  bio: { type: String },
+  isAdmin: { type: Boolean, default: false },
+  lastSeen: { type: Date, default: Date.now }
 });
 
 const sessionSchema = new mongoose.Schema({
@@ -74,7 +88,8 @@ const sessionSchema = new mongoose.Schema({
   expiresAt: { type: Date, required: true },
   downloadCount: { type: Number, default: 0 },
   contactCount: { type: Number, default: 0 },
-  status: { type: String, enum: ['active', 'expired', 'deleted'], default: 'active' }
+  status: { type: String, enum: ['active', 'expired', 'deleted'], default: 'active' },
+  groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' }
 });
 
 const contactSchema = new mongoose.Schema({
@@ -92,24 +107,36 @@ const downloadSchema = new mongoose.Schema({
 });
 
 const messageSchema = new mongoose.Schema({
-  content: { type: String, required: true },
-  sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  group: { type: String, default: 'main' },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date },
+  sessionId: { type: String, required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  content: { type: String },
+  image: { type: String },
+  timestamp: { type: Date, default: Date.now },
+  edited: { type: Boolean, default: false },
   deleted: { type: Boolean, default: false },
   deletedBy: { type: String, enum: ['user', 'admin'] },
-  pinned: { type: Boolean, default: false },
-  replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' }
+  replies: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    content: { type: String },
+    timestamp: { type: Date, default: Date.now }
+  }],
+  pinned: { type: Boolean, default: false }
 });
 
 const groupSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
-  description: { type: String },
+  name: { type: String, required: true },
+  description: { type: String, default: 'Community group for sharing contacts' },
   members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  createdAt: { type: Date, default: Date.now },
-  profilePicture: String
+  admins: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  createdAt: { type: Date, default: Date.now }
+});
+
+const privateMessageSchema = new mongoose.Schema({
+  sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  content: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+  read: { type: Boolean, default: false }
 });
 
 const User = mongoose.model('User', userSchema);
@@ -118,20 +145,7 @@ const Contact = mongoose.model('Contact', contactSchema);
 const Download = mongoose.model('Download', downloadSchema);
 const Message = mongoose.model('Message', messageSchema);
 const Group = mongoose.model('Group', groupSchema);
-
-// Create default group if not exists
-async function createDefaultGroup() {
-  const defaultGroup = await Group.findOne({ name: 'Community' });
-  if (!defaultGroup) {
-    const newGroup = new Group({
-      name: 'Community',
-      description: 'Main community group for all users',
-      members: []
-    });
-    await newGroup.save();
-    console.log('Default community group created');
-  }
-}
+const PrivateMessage = mongoose.model('PrivateMessage', privateMessageSchema);
 
 // Passport Configuration
 passport.use(new LocalStrategy(async (username, password, done) => {
@@ -165,156 +179,160 @@ const isAuthenticated = (req, res, next) => {
   res.redirect('/login');
 };
 
-// Admin Middleware
 const isAdmin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') return next();
+  if (req.session.isAdmin || (req.user && req.user.isAdmin)) return next();
   res.redirect('/admin/login');
 };
 
-// Socket.IO Connection
+// Socket.IO Logic
 io.on('connection', (socket) => {
-  console.log('a user connected');
+  console.log('User connected:', socket.id);
   
-  // Update user online status
-  if (socket.handshake.session.passport && socket.handshake.session.passport.user) {
-    const userId = socket.handshake.session.passport.user;
-    User.findByIdAndUpdate(userId, { online: true }, { new: true })
-      .then(user => {
-        io.emit('user status', { userId, online: true });
-      });
-  }
-
-  // Handle chat messages
-  socket.on('chat message', async (msg) => {
+  // Update user last seen time
+  socket.on('user-online', async (userId) => {
     try {
-      const userId = socket.handshake.session.passport.user;
-      const user = await User.findById(userId);
-      
-      // Check if user is banned or suspended
-      if (user.status !== 'active') return;
-      
-      // Create message
-      const message = new Message({
-        content: msg.content,
-        sender: userId,
-        group: msg.group,
-        replyTo: msg.replyTo
-      });
-      
-      const savedMessage = await message.save();
-      const populatedMessage = await Message.findById(savedMessage._id).populate('sender');
-      
-      io.emit('chat message', populatedMessage);
+      await User.findByIdAndUpdate(userId, { lastSeen: new Date() });
+      socket.broadcast.emit('user-status-changed', { userId, online: true });
     } catch (err) {
-      console.error('Error saving message:', err);
+      console.error('Update online status error:', err);
     }
   });
 
-  // Handle private messages
-  socket.on('private message', async (data) => {
+  // Join session room
+  socket.on('join-session', async (sessionId) => {
+    socket.join(sessionId);
     try {
-      const senderId = socket.handshake.session.passport.user;
-      const sender = await User.findById(senderId);
+      const sessionData = await Session.findOne({ sessionId });
+      if (!sessionData) return;
       
-      // Check if sender is allowed to send private messages
-      if (sender.status !== 'active' || !sender.privateMessaging) return;
+      // Add user to group if not already added
+      const group = await Group.findById(sessionData.groupId);
+      if (group && socket.request.session.passport) {
+        const userId = socket.request.session.passport.user;
+        if (!group.members.includes(userId)) {
+          group.members.push(userId);
+          await group.save();
+        }
+      }
       
-      const receiver = await User.findById(data.receiver);
-      if (!receiver || !receiver.privateMessaging) return;
+      // Emit online users
+      const sockets = await io.in(sessionId).fetchSockets();
+      const userIds = sockets.map(s => s.request.session.passport?.user).filter(id => id);
+      io.to(sessionId).emit('online-users', userIds);
+    } catch (err) {
+      console.error('Join session error:', err);
+    }
+  });
+
+  // Handle chat messages
+  socket.on('chat-message', async (data) => {
+    try {
+      // AI command handling
+      if (data.content && data.content.startsWith('/GTP')) {
+        const prompt = data.content.replace('/GTP', '').trim();
+        const completion = await openai.chat.completions.create({
+          messages: [{ role: "user", content: prompt }],
+          model: "gpt-3.5-turbo",
+        });
+        
+        const aiResponse = completion.choices[0].message.content;
+        io.to(data.sessionId).emit('ai-response', {
+          sessionId: data.sessionId,
+          content: aiResponse,
+          isAI: true
+        });
+        return;
+      }
       
-      // Create private message
+      // Save message to DB
       const message = new Message({
+        sessionId: data.sessionId,
+        userId: data.userId,
         content: data.content,
-        sender: senderId,
-        receiver: data.receiver,
-        replyTo: data.replyTo
+        image: data.image
       });
       
-      const savedMessage = await message.save();
-      const populatedMessage = await Message.findById(savedMessage._id).populate('sender');
+      await message.save();
       
-      io.to(data.receiver).emit('private message', populatedMessage);
-      socket.emit('private message', populatedMessage);
+      // Broadcast message to room
+      io.to(data.sessionId).emit('new-message', message);
     } catch (err) {
-      console.error('Error saving private message:', err);
+      console.error('Chat message error:', err);
     }
+  });
+
+  // Handle typing indicators
+  socket.on('typing', (data) => {
+    socket.to(data.sessionId).emit('user-typing', {
+      userId: data.userId,
+      username: data.username
+    });
   });
 
   // Handle message deletion
-  socket.on('delete message', async (msgId) => {
+  socket.on('delete-message', async (data) => {
     try {
-      const userId = socket.handshake.session.passport.user;
-      const user = await User.findById(userId);
-      const message = await Message.findById(msgId).populate('sender');
-      
+      const message = await Message.findById(data.messageId);
       if (!message) return;
       
-      // Check permissions
-      if (user.role === 'admin' || message.sender._id.equals(userId)) {
+      if (message.userId.toString() === data.userId || data.isAdmin) {
         message.deleted = true;
-        message.deletedBy = user.role === 'admin' ? 'admin' : 'user';
+        message.deletedBy = data.isAdmin ? 'admin' : 'user';
         await message.save();
         
-        io.emit('message deleted', { 
-          id: msgId, 
-          deletedBy: message.deletedBy 
+        io.to(data.sessionId).emit('message-deleted', {
+          messageId: data.messageId,
+          deletedBy: message.deletedBy
         });
       }
     } catch (err) {
-      console.error('Error deleting message:', err);
+      console.error('Delete message error:', err);
     }
   });
 
   // Handle message editing
-  socket.on('edit message', async (data) => {
+  socket.on('edit-message', async (data) => {
     try {
-      const userId = socket.handshake.session.passport.user;
-      const user = await User.findById(userId);
-      const message = await Message.findById(data.id).populate('sender');
+      const message = await Message.findById(data.messageId);
+      if (!message || message.deleted) return;
       
-      if (!message) return;
-      
-      // Check permissions
-      if (user.role === 'admin' || message.sender._id.equals(userId)) {
-        message.content = data.content;
-        message.updatedAt = new Date();
+      if (message.userId.toString() === data.userId || data.isAdmin) {
+        message.content = data.newContent;
+        message.edited = true;
         await message.save();
         
-        io.emit('message edited', message);
+        io.to(data.sessionId).emit('message-edited', {
+          messageId: data.messageId,
+          newContent: data.newContent
+        });
       }
     } catch (err) {
-      console.error('Error editing message:', err);
+      console.error('Edit message error:', err);
     }
   });
 
-  // Handle pin/unpin messages
-  socket.on('toggle pin', async (msgId) => {
+  // Handle private messages
+  socket.on('private-message', async (data) => {
     try {
-      const userId = socket.handshake.session.passport.user;
-      const user = await User.findById(userId);
+      const privateMessage = new PrivateMessage({
+        sender: data.senderId,
+        receiver: data.receiverId,
+        content: data.content
+      });
       
-      if (user.role !== 'admin') return;
+      await privateMessage.save();
       
-      const message = await Message.findById(msgId);
-      if (!message) return;
-      
-      message.pinned = !message.pinned;
-      await message.save();
-      
-      io.emit('message pinned', message);
+      // Emit to sender and receiver
+      io.to(socket.id).emit('new-private-message', privateMessage);
+      socket.to(`user-${data.receiverId}`).emit('new-private-message', privateMessage);
     } catch (err) {
-      console.error('Error toggling pin:', err);
+      console.error('Private message error:', err);
     }
   });
 
-  // Handle disconnection
-  socket.on('disconnect', async () => {
-    console.log('user disconnected');
-    if (socket.handshake.session.passport && socket.handshake.session.passport.user) {
-      const userId = socket.handshake.session.passport.user;
-      await User.findByIdAndUpdate(userId, { online: false });
-      io.emit('user status', { userId, online: false });
-    }
+  // Disconnect handler
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
   });
 });
 
@@ -323,54 +341,7 @@ app.get('/', (req, res) => res.render('index'));
 
 app.get('/login', (req, res) => res.render('login'));
 app.get('/signup', (req, res) => res.render('signup'));
-
-// Community Chat
-app.get('/chat', isAuthenticated, async (req, res) => {
-  try {
-    // Add user to default group
-    const group = await Group.findOne({ name: 'Community' });
-    if (!group.members.includes(req.user._id)) {
-      group.members.push(req.user._id);
-      await group.save();
-    }
-    
-    // Get last 50 messages
-    const messages = await Message.find({ group: 'main', deleted: false })
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .populate('sender')
-      .populate('replyTo');
-    
-    // Get online users
-    const onlineUsers = await User.find({ online: true, status: 'active' });
-    
-    res.render('chat', { 
-      user: req.user, 
-      messages: messages.reverse(),
-      onlineUsers,
-      group
-    });
-  } catch (err) {
-    console.error('Chat error:', err);
-    res.status(500).send('Internal server error');
-  }
-});
-
-// User Profile
-app.get('/profile/:userId', isAuthenticated, async (req, res) => {
-  try {
-    const profileUser = await User.findById(req.params.userId);
-    if (!profileUser) return res.status(404).send('User not found');
-    
-    res.render('profile', {
-      currentUser: req.user,
-      profileUser
-    });
-  } catch (err) {
-    console.error('Profile error:', err);
-    res.status(500).send('Internal server error');
-  }
-});
+app.get('/admin/login', (req, res) => res.render('admin-login'));
 
 // Terminal (Dashboard)
 app.get('/terminal', isAuthenticated, async (req, res) => {
@@ -432,21 +403,134 @@ app.get('/admin', isAdmin, async (req, res) => {
   }
 });
 
+// Chat Interface
+app.get('/chat/:sessionId', isAuthenticated, async (req, res) => {
+  try {
+    const sessionId = req.params.sessionId;
+    const sessionData = await Session.findOne({ sessionId }).populate('groupId');
+    if (!sessionData) return res.status(404).send('Session not found');
+    
+    // Get or create group
+    let group = sessionData.groupId;
+    if (!group) {
+      group = new Group({
+        name: sessionData.groupName,
+        members: [req.user._id],
+        admins: [req.user._id]
+      });
+      await group.save();
+      
+      sessionData.groupId = group._id;
+      await sessionData.save();
+    }
+    
+    // Add user to group if not already
+    if (!group.members.includes(req.user._id)) {
+      group.members.push(req.user._id);
+      await group.save();
+    }
+    
+    // Get messages
+    const messages = await Message.find({ sessionId })
+      .sort({ timestamp: -1 })
+      .limit(50)
+      .populate('userId');
+    
+    // Get members with online status
+    const allSockets = await io.fetchSockets();
+    const onlineUserIds = allSockets
+      .map(s => s.request.session.passport?.user)
+      .filter(id => id);
+    
+    const members = await User.find({ _id: { $in: group.members } });
+    const membersWithStatus = members.map(member => ({
+      ...member.toObject(),
+      online: onlineUserIds.includes(member._id.toString())
+    }));
+    
+    res.render('chat', {
+      sessionId,
+      groupName: sessionData.groupName,
+      groupDescription: group.description,
+      messages: messages.reverse(),
+      members: membersWithStatus,
+      user: req.user
+    });
+  } catch (err) {
+    console.error('Chat error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// User Profile
+app.get('/profile/:userId', isAuthenticated, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).send('User not found');
+    
+    // Check online status
+    const allSockets = await io.fetchSockets();
+    const onlineUserIds = allSockets
+      .map(s => s.request.session.passport?.user)
+      .filter(id => id);
+    
+    const isOnline = onlineUserIds.includes(user._id.toString());
+    
+    res.render('profile', {
+      user,
+      isOnline,
+      currentUser: req.user
+    });
+  } catch (err) {
+    console.error('Profile error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// Upload profile picture
+app.post('/upload-profile-pic', isAuthenticated, upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).send('No file uploaded');
+    
+    // Process image
+    const buffer = await sharp(req.file.buffer)
+      .resize(300, 300)
+      .png()
+      .toBuffer();
+    
+    const filename = `${req.user._id}-${Date.now()}.png`;
+    const filepath = path.join(__dirname, 'public', 'uploads', filename);
+    
+    require('fs').writeFileSync(filepath, buffer);
+    
+    // Update user
+    await User.findByIdAndUpdate(req.user._id, { avatar: `/uploads/${filename}` });
+    
+    res.redirect(`/profile/${req.user._id}`);
+  } catch (err) {
+    console.error('Upload error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
 // Consolidated Session Route
 app.get('/session/:sessionId', async (req, res) => {
   const sessionId = req.params.sessionId;
   try {
     const sessionData = await Session.findOne({ sessionId });
-    if (!sessionData) {
-      return res.status(404).send('Session not found.');
-    }
+    if (!sessionData) return res.status(404).send('Session not found.');
+    
+    // Check if session is expired
     if (Date.now() > sessionData.expiresAt && sessionData.status !== 'expired') {
       sessionData.status = 'expired';
       await sessionData.save();
     }
+    
+    // Calculate remaining time
     const msLeft = sessionData.expiresAt - Date.now();
     const totalSeconds = msLeft > 0 ? Math.floor(msLeft / 1000) : 0;
 
+    // Get recommended sessions
     const recommendedSessions = await Session.find({ 
       sessionId: { $ne: sessionId },
       expiresAt: { $gt: new Date() },
@@ -470,9 +554,7 @@ app.get('/session/:sessionId', async (req, res) => {
 app.post('/delete-session/:sessionId', isAuthenticated, async (req, res) => {
   try {
     const session = await Session.findOne({ sessionId: req.params.sessionId, userId: req.user._id });
-    if (!session) {
-      return res.status(404).send('Session not found');
-    }
+    if (!session) return res.status(404).send('Session not found');
     await session.remove();
     res.redirect('/terminal');
   } catch (err) {
@@ -481,49 +563,53 @@ app.post('/delete-session/:sessionId', isAuthenticated, async (req, res) => {
   }
 });
 
-// Admin Delete User
-app.post('/admin/delete-user/:userId', isAdmin, async (req, res) => {
+// Admin User Management
+app.post('/admin/suspend-user/:userId', isAdmin, async (req, res) => {
   try {
-    await User.findByIdAndDelete(req.params.userId);
+    await User.findByIdAndUpdate(req.params.userId, { status: 'suspended' });
     res.redirect('/admin');
   } catch (err) {
-    console.error('Delete user error:', err);
+    console.error('Suspend user error:', err);
     res.status(500).send('Internal server error');
   }
 });
 
-// Admin Delete Session
-app.post('/admin/delete-session/:sessionId', isAdmin, async (req, res) => {
+app.post('/admin/unsuspend-user/:userId', isAdmin, async (req, res) => {
   try {
-    await Session.findOneAndDelete({ sessionId: req.params.sessionId });
+    await User.findByIdAndUpdate(req.params.userId, { status: 'active' });
     res.redirect('/admin');
   } catch (err) {
-    console.error('Delete session error:', err);
+    console.error('Unsuspend user error:', err);
     res.status(500).send('Internal server error');
   }
 });
 
-// Admin Update User Role
-app.post('/admin/update-role/:userId', isAdmin, async (req, res) => {
+app.post('/admin/ban-user/:userId', isAdmin, async (req, res) => {
   try {
-    const { role } = req.body;
-    await User.findByIdAndUpdate(req.params.userId, { role });
+    await User.findByIdAndUpdate(req.params.userId, { status: 'banned' });
     res.redirect('/admin');
   } catch (err) {
-    console.error('Update role error:', err);
+    console.error('Ban user error:', err);
     res.status(500).send('Internal server error');
   }
 });
 
-// Admin Toggle Private Messaging
-app.post('/admin/toggle-pm/:userId', isAdmin, async (req, res) => {
+app.post('/admin/unban-user/:userId', isAdmin, async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId);
-    user.privateMessaging = !user.privateMessaging;
-    await user.save();
+    await User.findByIdAndUpdate(req.params.userId, { status: 'active' });
     res.redirect('/admin');
   } catch (err) {
-    console.error('Toggle PM error:', err);
+    console.error('Unban user error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+app.post('/admin/promote-user/:userId', isAdmin, async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.params.userId, { isAdmin: true });
+    res.redirect('/admin');
+  } catch (err) {
+    console.error('Promote user error:', err);
     res.status(500).send('Internal server error');
   }
 });
@@ -531,17 +617,19 @@ app.post('/admin/toggle-pm/:userId', isAdmin, async (req, res) => {
 // User Signup
 app.post('/signup', async (req, res) => {
   try {
-    const { username, password, confirmPassword } = req.body;
-    
-    if (password !== confirmPassword) {
+    if (req.body.password !== req.body.confirmPassword) {
       return res.render('signup', { error: 'Passwords do not match' });
     }
     
-    const existingUser = await User.findOne({ username });
+    const existingUser = await User.findOne({ username: req.body.username });
     if (existingUser) return res.render('signup', { error: 'Username already exists' });
     
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ username, password: hashedPassword });
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const user = new User({ 
+      username: req.body.username, 
+      password: hashedPassword 
+    });
+    
     await user.save();
     res.redirect('/login');
   } catch (err) {
@@ -565,18 +653,11 @@ app.get('/logout', (req, res) => {
 });
 
 // Admin Login
-app.get('/admin/login', (req, res) => {
-  res.render('admin-login');
-});
-
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-    // Create admin session
-    req.login({ username, role: 'admin' }, (err) => {
-      if (err) return res.status(500).send('Login error');
-      res.redirect('/admin');
-    });
+    req.session.isAdmin = true;
+    res.redirect('/admin');
   } else {
     res.render('admin-login', { error: 'Invalid credentials' });
   }
@@ -587,13 +668,21 @@ app.post('/create-session', isAuthenticated, async (req, res) => {
   const { groupName, timer, whatsappLink } = req.body;
   if (!groupName || !timer) return res.status(400).json({ error: 'Group name and timer are required.' });
   if (isNaN(timer) || timer <= 0 || timer > 1440) return res.status(400).json({ error: 'Timer must be a positive number up to 1440 minutes.' });
+  
   const sessionId = 'GDT' + crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 6);
   const now = Date.now();
   const expiresAt = new Date(now + parseInt(timer) * 60 * 1000);
+  
   try {
     const session = new Session({
-      userId: req.user._id, sessionId, groupName, whatsappLink, timer, expiresAt
+      userId: req.user._id, 
+      sessionId, 
+      groupName, 
+      whatsappLink, 
+      timer, 
+      expiresAt
     });
+    
     await session.save();
     const sessionLink = `${req.protocol}://${req.get('host')}/session/${sessionId}`;
     res.json({ sessionLink });
@@ -613,9 +702,7 @@ app.post('/session/:sessionId/contact', async (req, res) => {
 
   try {
     const sessionData = await Session.findOne({ sessionId });
-    if (!sessionData) {
-      return res.status(404).json({ error: 'Session not found.' });
-    }
+    if (!sessionData) return res.status(404).json({ error: 'Session not found.' });
 
     if (Date.now() > sessionData.expiresAt) {
       sessionData.status = 'expired';
@@ -641,9 +728,7 @@ app.get('/session/:sessionId/download', async (req, res) => {
 
   try {
     const sessionData = await Session.findOne({ sessionId });
-    if (!sessionData) {
-      return res.status(404).send('Session not found.');
-    }
+    if (!sessionData) return res.status(404).send('Session not found.');
 
     sessionData.downloadCount += 1;
     await sessionData.save();
@@ -662,6 +747,7 @@ END:VCARD
 
     const fileName = `${sessionData.groupName.replace(/[^a-z0-9]/gi, '_')}_${sessionId}.vcf`;
 
+    // Record download
     const download = new Download({
       sessionId,
       status: 'success'
@@ -674,6 +760,7 @@ END:VCARD
   } catch (err) {
     console.error('Download error:', err);
 
+    // Record failed download
     const download = new Download({
       sessionId,
       status: 'failed',
@@ -685,31 +772,8 @@ END:VCARD
   }
 });
 
-// Admin Suspend User
-app.post('/admin/suspend-user/:userId', isAdmin, async (req, res) => {
-  try {
-    await User.findByIdAndUpdate(req.params.userId, { status: 'suspended' });
-    res.redirect('/admin');
-  } catch (err) {
-    console.error('Suspend user error:', err);
-    res.status(500).send('Internal server error');
-  }
-});
-
-// Admin Ban User
-app.post('/admin/ban-user/:userId', isAdmin, async (req, res) => {
-  try {
-    await User.findByIdAndUpdate(req.params.userId, { status: 'banned' });
-    res.redirect('/admin');
-  } catch (err) {
-    console.error('Ban user error:', err);
-    res.status(500).send('Internal server error');
-  }
-});
-
 // Start Server
 mongoose.connection.once('open', () => {
-  createDefaultGroup();
   const PORT = process.env.PORT || 3000;
-  http.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });
