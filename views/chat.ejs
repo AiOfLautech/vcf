@@ -3,18 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Community Chat | Contact Gain</title>
+  <title><%= groupName %> | Contact Gain</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <style>
     :root {
       --primary: #6366f1;
       --primary-light: #818cf8;
-      --secondary: #10b981;
-      --danger: #ef4444;
-      --warning: #f59e0b;
-      --info: #0ea5e9;
       --dark: #1e293b;
       --light: #f8fafc;
       --gray: #94a3b8;
@@ -30,250 +27,82 @@
     }
 
     body {
-      background-color: #f1f5f9;
-      color: #334155;
-      min-height: 100vh;
-      display: flex;
+      background: #f1f5f9;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    /* Sidebar Styles */
-    .sidebar {
-      width: 260px;
-      background: var(--dark);
-      color: white;
-      padding: 1.5rem 1rem;
-      display: flex;
-      flex-direction: column;
-      box-shadow: var(--card-shadow);
-      z-index: 10;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .logo i {
-      font-size: 1.8rem;
-      color: var(--primary-light);
-    }
-
-    .logo-text {
-      font-size: 1.4rem;
-      font-weight: 700;
-    }
-
-    .logo-text span:first-child {
-      color: var(--primary-light);
-    }
-
-    .logo-text span:last-child {
-      color: white;
-    }
-
-    .nav-links {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      flex-grow: 1;
-    }
-
-    .nav-link {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 0.8rem 1rem;
-      border-radius: 8px;
-      text-decoration: none;
-      color: var(--gray);
-      transition: all 0.3s ease;
-      font-weight: 500;
-    }
-
-    .nav-link:hover, .nav-link.active {
-      background: rgba(99, 102, 241, 0.15);
-      color: var(--primary-light);
-    }
-
-    .nav-link i {
-      font-size: 1.2rem;
-      width: 24px;
-      text-align: center;
-    }
-
-    .user-section {
-      margin-top: auto;
-      padding-top: 1rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      color: white;
-      position: relative;
-    }
-
-    .online-dot {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      width: 10px;
-      height: 10px;
-      background: var(--secondary);
-      border-radius: 50%;
-      border: 2px solid var(--dark);
-    }
-
-    .user-details {
-      flex-grow: 1;
-    }
-
-    .user-name {
-      font-weight: 600;
-      margin-bottom: 0.2rem;
-      font-size: 0.95rem;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .verified-badge {
-      color: var(--primary-light);
-      font-size: 0.8rem;
-    }
-
-    .user-email {
-      font-size: 0.8rem;
-      color: var(--gray);
-    }
-
-    .logout-btn {
-      display: block;
-      width: 100%;
-      text-align: center;
-      padding: 0.6rem;
-      margin-top: 1rem;
-      background: rgba(99, 102, 241, 0.15);
-      color: var(--primary-light);
-      border-radius: 8px;
-      text-decoration: none;
-      transition: all 0.3s ease;
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
-
-    .logout-btn:hover {
-      background: rgba(99, 102, 241, 0.25);
-    }
-
-    /* Main Chat Area */
-    .main-content {
-      flex-grow: 1;
+    .chat-container {
       display: flex;
       flex-direction: column;
       height: 100vh;
+      max-width: 1000px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      box-shadow: var(--card-shadow);
     }
 
     .chat-header {
-      background: var(--card-bg);
-      padding: 1rem 1.5rem;
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 15px;
+      padding: 1rem;
       border-bottom: 1px solid #e2e8f0;
-    }
-
-    .group-avatar {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: var(--dark);
       color: white;
-      font-size: 1.5rem;
-      position: relative;
-    }
-
-    .group-avatar .online-count {
-      position: absolute;
-      bottom: -5px;
-      right: -5px;
-      background: var(--secondary);
-      color: white;
-      font-size: 0.7rem;
-      padding: 2px 6px;
-      border-radius: 10px;
     }
 
     .group-info {
-      flex-grow: 1;
-    }
-
-    .group-name {
-      font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 5px;
-    }
-
-    .group-status {
-      font-size: 0.9rem;
-      color: var(--gray);
-    }
-
-    .chat-actions {
-      display: flex;
-      gap: 15px;
-    }
-
-    .chat-action {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #f1f5f9;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      gap: 1rem;
       cursor: pointer;
-      transition: all 0.3s ease;
     }
 
-    .chat-action:hover {
-      background: #e2e8f0;
+    .group-info img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
     }
 
-    /* Chat Messages */
-    .chat-messages {
-      flex-grow: 1;
+    .hashtag-btn {
+      padding: 0.5rem 1rem;
+      background: var(--primary);
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .group-info-panel {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 400px;
+      background: white;
+      border-radius: 12px;
       padding: 1.5rem;
+      box-shadow: var(--card-shadow);
+      z-index: 100;
+      display: none;
+    }
+
+    .chat-messages {
+      flex: 1;
       overflow-y: auto;
+      padding: 1rem;
       display: flex;
       flex-direction: column;
-      gap: 15px;
+      gap: 1rem;
     }
 
     .message {
       display: flex;
-      gap: 12px;
+      gap: 1rem;
       max-width: 80%;
     }
 
@@ -286,32 +115,14 @@
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 500;
-      flex-shrink: 0;
-      position: relative;
-    }
-
-    .online-dot {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      width: 10px;
-      height: 10px;
-      background: var(--secondary);
-      border-radius: 50%;
-      border: 2px solid white;
+      object-fit: cover;
     }
 
     .message-content {
       background: #f1f5f9;
-      padding: 12px 15px;
-      border-radius: 18px;
-      position: relative;
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      max-width: 100%;
     }
 
     .message.self .message-content {
@@ -321,18 +132,12 @@
 
     .message-header {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 5px;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
     }
 
-    .message-sender {
+    .message-username {
       font-weight: 600;
-      font-size: 0.95rem;
-    }
-
-    .verified-badge {
-      color: var(--primary-light);
     }
 
     .message-time {
@@ -344,22 +149,12 @@
       color: rgba(255, 255, 255, 0.8);
     }
 
-    .message-text {
-      line-height: 1.5;
-    }
-
     .message-actions {
-      position: absolute;
-      top: -25px;
-      right: 10px;
       display: flex;
-      gap: 5px;
-      background: white;
-      padding: 3px 8px;
-      border-radius: 20px;
-      box-shadow: var(--card-shadow);
+      gap: 0.5rem;
+      margin-top: 0.5rem;
       opacity: 0;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.3s;
     }
 
     .message:hover .message-actions {
@@ -367,517 +162,363 @@
     }
 
     .message-action {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: none;
+      border: none;
+      color: var(--gray);
       cursor: pointer;
-      transition: all 0.3s ease;
+      font-size: 0.8rem;
     }
 
-    .message-action:hover {
-      background: #f1f5f9;
-    }
-
-    .reply-indicator {
-      background: rgba(0, 0, 0, 0.05);
-      border-left: 3px solid var(--primary);
-      padding: 5px 10px;
-      margin-top: 8px;
-      border-radius: 0 8px 8px 0;
-      font-size: 0.9rem;
-    }
-
-    .deleted-message {
+    .typing-indicator {
+      height: 20px;
+      padding: 0 1rem;
       font-style: italic;
       color: var(--gray);
     }
 
-    .pinned-message {
-      background: rgba(255, 255, 0, 0.1);
-      border-left: 3px solid var(--warning);
-    }
-
-    /* Chat Input */
     .chat-input {
-      background: var(--card-bg);
+      display: flex;
+      gap: 1rem;
       padding: 1rem;
       border-top: 1px solid #e2e8f0;
-      display: flex;
-      gap: 10px;
+      background: white;
     }
 
-    .input-container {
-      flex-grow: 1;
-      position: relative;
-    }
-
-    .chat-textarea {
-      width: 100%;
-      min-height: 50px;
-      max-height: 150px;
-      padding: 12px 15px;
+    .chat-input input {
+      flex: 1;
+      padding: 0.8rem 1rem;
       border: 1px solid #e2e8f0;
-      border-radius: 25px;
-      resize: none;
-      font-size: 1rem;
+      border-radius: 20px;
     }
 
-    .input-actions {
-      position: absolute;
-      bottom: 12px;
-      right: 15px;
-      display: flex;
-      gap: 8px;
-    }
-
-    .input-action {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .input-action:hover {
-      background: #f1f5f9;
-    }
-
-    .send-button {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
+    .chat-input button {
+      padding: 0.8rem 1.5rem;
       background: var(--primary);
       color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      border: none;
+      border-radius: 20px;
       cursor: pointer;
-      transition: all 0.3s ease;
-      flex-shrink: 0;
     }
 
-    .send-button:hover {
-      background: var(--primary-light);
+    .ai-panel {
+      position: fixed;
+      bottom: 70px;
+      right: 20px;
+      width: 300px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: var(--card-shadow);
+      padding: 1rem;
+      display: none;
+      z-index: 100;
     }
 
-    /* Online Users */
-    .online-users {
-      width: 260px;
-      background: var(--card-bg);
-      padding: 1.5rem 1rem;
-      border-left: 1px solid #e2e8f0;
-      overflow-y: auto;
-    }
-
-    .section-title {
-      font-weight: 600;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .user-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .user-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 0.5rem;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .user-item:hover {
-      background: #f1f5f9;
-    }
-
-    .user-item-avatar {
-      width: 40px;
-      height: 40px;
+    .online-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: #10b981;
       border-radius: 50%;
-      background: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 500;
-      position: relative;
-      flex-shrink: 0;
+      margin-left: 5px;
     }
 
-    .user-item-name {
-      font-weight: 500;
-      font-size: 0.95rem;
+    .admin-badge {
+      color: var(--primary);
+      margin-left: 5px;
     }
   </style>
 </head>
 <body>
-  <div class="sidebar">
-    <div class="logo">
-      <i class="fas fa-bolt"></i>
-      <div class="logo-text">
-        <span>Contact</span><span>Gain</span>
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="group-info" onclick="toggleGroupInfo()">
+        <img src="/images/group-icon.png" alt="Group Icon">
+        <div>
+          <h3><%= groupName %></h3>
+          <p><span id="online-count"><%= members.filter(m => m.online).length %></span> online</p>
+        </div>
+      </div>
+      <div class="hashtag-btn" onclick="openAIFeatures()">
+        <i class="fas fa-hashtag"></i> AI
       </div>
     </div>
-    <div class="nav-links">
-      <a href="/terminal" class="nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
-      <a href="/chat" class="nav-link active"><i class="fas fa-comments"></i> Community</a>
-      <a href="#" class="nav-link"><i class="fas fa-file-contract"></i> Contacts</a>
-      <a href="#" class="nav-link"><i class="fas fa-history"></i> History</a>
-      <a href="#" class="nav-link"><i class="fas fa-cog"></i> Settings</a>
-    </div>
-    <div class="user-section">
-      <div class="user-info">
-        <div class="user-avatar">
-          <%= user.username.charAt(0).toUpperCase() %>
-          <% if (user.online) { %>
-            <div class="online-dot"></div>
-          <% } %>
-        </div>
-        <div class="user-details">
-          <div class="user-name">
-            <%= user.username %>
-            <% if (user.role === 'admin') { %>
-              <i class="fas fa-check-circle verified-badge"></i>
+
+    <div class="group-info-panel" id="groupInfoPanel">
+      <h4><%= groupName %></h4>
+      <p><%= groupDescription %></p>
+      <p>Members: <span id="member-count"><%= members.length %></span></p>
+      <button onclick="copyGroupLink()">Copy Group Link</button>
+      
+      <div class="member-list">
+        <% members.forEach(member => { %>
+          <div class="member">
+            <img src="<%= member.avatar || '/images/default-avatar.png' %>" 
+                 alt="<%= member.username %>" 
+                 width="30" height="30" 
+                 style="border-radius: 50%;">
+            <span><%= member.username %></span>
+            <% if (member.isAdmin) { %>
+              <i class="fas fa-shield-alt admin-badge"></i>
+            <% } %>
+            <% if (member.online) { %>
+              <span class="online-dot"></span>
             <% } %>
           </div>
-          <div class="user-email">Member</div>
-        </div>
-      </div>
-      <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-    </div>
-  </div>
-
-  <div class="main-content">
-    <div class="chat-header">
-      <div class="group-avatar">
-        <i class="fas fa-users"></i>
-        <span class="online-count"><%= onlineUsers.length %></span>
-      </div>
-      <div class="group-info">
-        <div class="group-name">
-          <%= group.name %>
-          <i class="fas fa-hashtag"></i>
-        </div>
-        <div class="group-status"><%= group.description %></div>
-      </div>
-      <div class="chat-actions">
-        <div class="chat-action" title="Group info">
-          <i class="fas fa-info-circle"></i>
-        </div>
-        <div class="chat-action" title="Search">
-          <i class="fas fa-search"></i>
-        </div>
+        <% }); %>
       </div>
     </div>
 
     <div class="chat-messages" id="chatMessages">
       <% messages.forEach(message => { %>
-        <div class="message <%= message.sender._id.equals(user._id) ? 'self' : '' %> <%= message.pinned ? 'pinned-message' : '' %>" data-id="<%= message._id %>">
-          <div class="message-avatar">
-            <%= message.sender.username.charAt(0).toUpperCase() %>
-            <% if (message.sender.online) { %>
-              <div class="online-dot"></div>
-            <% } %>
-          </div>
-          <div class="message-content">
-            <div class="message-header">
-              <span class="message-sender">
-                <%= message.sender.username %>
-                <% if (message.sender.role === 'admin') { %>
-                  <i class="fas fa-check-circle verified-badge"></i>
-                <% } %>
-              </span>
-              <span class="message-time">
-                <%= new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %>
-              </span>
+        <% if (message.deleted) { %>
+          <div class="message">
+            <div class="message-content">
+              <p><i>This message was deleted by <%= message.deletedBy === 'admin' ? 'admin' : 'user' %></i></p>
             </div>
-            
-            <% if (message.deleted) { %>
-              <div class="message-text deleted-message">
-                This message was deleted <%= message.deletedBy === 'admin' ? 'by admin' : '' %>
+          </div>
+        <% } else { %>
+          <div class="message <%= message.userId._id.toString() === user._id.toString() ? 'self' : '' %>">
+            <img src="<%= message.userId.avatar || '/images/default-avatar.png' %>" 
+                 alt="<%= message.userId.username %>" 
+                 class="message-avatar">
+            <div class="message-content">
+              <div class="message-header">
+                <span class="message-username">
+                  <%= message.userId.username %>
+                  <% if (message.userId.isAdmin) { %>
+                    <i class="fas fa-shield-alt admin-badge"></i>
+                  <% } %>
+                </span>
+                <span class="message-time">
+                  <%= new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %>
+                </span>
               </div>
-            <% } else { %>
-              <% if (message.replyTo) { %>
-                <div class="reply-indicator">
-                  Replying to: <%= message.replyTo.content.substring(0, 30) + (message.replyTo.content.length > 30 ? '...' : '') %>
-                </div>
+              <p><%= message.content %></p>
+              <% if (message.edited) { %>
+                <small><i>edited</i></small>
               <% } %>
-              <div class="message-text">
-                <%= message.content %>
-              </div>
-            <% } %>
-            
-            <div class="message-actions">
-              <% if (!message.deleted) { %>
-                <div class="message-action" title="Reply" onclick="replyToMessage('<%= message._id %>', '<%= message.sender.username %>')">
-                  <i class="fas fa-reply"></i>
-                </div>
-                <% if (message.sender._id.equals(user._id) || user.role === 'admin') { %>
-                  <div class="message-action" title="Edit" onclick="editMessage('<%= message._id %>')">
+              <div class="message-actions">
+                <% if (message.userId._id.toString() === user._id.toString() || user.isAdmin) { %>
+                  <button class="message-action" onclick="editMessage('<%= message._id %>')">
                     <i class="fas fa-edit"></i>
-                  </div>
-                  <div class="message-action" title="Delete" onclick="deleteMessage('<%= message._id %>')">
+                  </button>
+                  <button class="message-action" onclick="deleteMessage('<%= message._id %>', <%= user.isAdmin %>)">
                     <i class="fas fa-trash"></i>
-                  </div>
+                  </button>
                 <% } %>
-                <% if (user.role === 'admin') { %>
-                  <div class="message-action" title="<%= message.pinned ? 'Unpin' : 'Pin' %>" onclick="togglePin('<%= message._id %>')">
-                    <i class="fas fa-thumbtack"></i>
-                  </div>
-                <% } %>
-              <% } %>
+                <button class="message-action" onclick="replyToMessage('<%= message.userId.username %>')">
+                  <i class="fas fa-reply"></i>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        <% } %>
       <% }); %>
     </div>
+
+    <div class="typing-indicator" id="typingIndicator"></div>
 
     <div class="chat-input">
-      <div class="input-container">
-        <textarea class="chat-textarea" id="messageInput" placeholder="Type your message..."></textarea>
-        <div class="input-actions">
-          <div class="input-action">
-            <i class="fas fa-paperclip"></i>
-          </div>
-          <div class="input-action">
-            <i class="fas fa-smile"></i>
-          </div>
-        </div>
-      </div>
-      <div class="send-button" id="sendButton">
-        <i class="fas fa-paper-plane"></i>
-      </div>
+      <input type="text" id="messageInput" placeholder="Type a message..." 
+             oninput="handleTyping()">
+      <button onclick="sendMessage()">Send</button>
     </div>
-  </div>
 
-  <div class="online-users">
-    <div class="section-title">
-      <i class="fas fa-user-friends"></i>
-      Online Users (<%= onlineUsers.length %>)
-    </div>
-    <div class="user-list">
-      <% onlineUsers.forEach(onlineUser => { %>
-        <div class="user-item" onclick="startPrivateChat('<%= onlineUser._id %>', '<%= onlineUser.username %>')">
-          <div class="user-item-avatar">
-            <%= onlineUser.username.charAt(0).toUpperCase() %>
-            <div class="online-dot"></div>
-          </div>
-          <div class="user-item-name">
-            <%= onlineUser.username %>
-            <% if (onlineUser.role === 'admin') { %>
-              <i class="fas fa-check-circle verified-badge"></i>
-            <% } %>
-          </div>
-        </div>
-      <% }); %>
+    <div class="ai-panel" id="aiPanel">
+      <h4>AI Assistant</h4>
+      <input type="text" id="aiPrompt" placeholder="Ask me anything...">
+      <button onclick="sendAIPrompt()">Ask</button>
+      <div class="ai-response" id="aiResponse"></div>
     </div>
   </div>
 
   <script>
     const socket = io();
-    const chatMessages = document.getElementById('chatMessages');
-    const messageInput = document.getElementById('messageInput');
-    const sendButton = document.getElementById('sendButton');
-    let replyingTo = null;
-    let editingMessageId = null;
+    const sessionId = '<%= sessionId %>';
+    const userId = '<%= user._id %>';
+    const username = '<%= user.username %>';
+    const isAdmin = <%= user.isAdmin %>;
     
-    // Scroll to bottom of chat
+    // Join session and notify online status
+    socket.emit('user-online', userId);
+    socket.emit('join-session', sessionId);
+    
+    // Scroll to bottom of messages
     function scrollToBottom() {
+      const chatMessages = document.getElementById('chatMessages');
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
     
-    scrollToBottom();
-    
-    // Send message
-    function sendMessage() {
-      const content = messageInput.value.trim();
-      if (!content) return;
+    // Handle new messages
+    socket.on('new-message', (message) => {
+      const chatMessages = document.getElementById('chatMessages');
+      const isSelf = message.userId === userId;
       
-      if (editingMessageId) {
-        socket.emit('edit message', { id: editingMessageId, content });
-        editingMessageId = null;
-      } else {
-        socket.emit('chat message', { 
-          content, 
-          group: 'main',
-          replyTo: replyingTo 
-        });
-      }
-      
-      messageInput.value = '';
-      replyingTo = null;
-    }
-    
-    // Start private chat
-    function startPrivateChat(userId, username) {
-      const content = prompt(`Send a private message to ${username}:`);
-      if (content) {
-        socket.emit('private message', { 
-          content, 
-          receiver: userId 
-        });
-      }
-    }
-    
-    // Reply to message
-    function replyToMessage(messageId, username) {
-      replyingTo = messageId;
-      messageInput.value = `@${username} `;
-      messageInput.focus();
-    }
-    
-    // Edit message
-    function editMessage(messageId) {
-      const messageElement = document.querySelector(`.message[data-id="${messageId}"]`);
-      const messageText = messageElement.querySelector('.message-text').textContent;
-      
-      editingMessageId = messageId;
-      messageInput.value = messageText;
-      messageInput.focus();
-    }
-    
-    // Delete message
-    function deleteMessage(messageId) {
-      if (confirm('Are you sure you want to delete this message?')) {
-        socket.emit('delete message', messageId);
-      }
-    }
-    
-    // Toggle pin
-    function togglePin(messageId) {
-      socket.emit('toggle pin', messageId);
-    }
-    
-    // Event listeners
-    sendButton.addEventListener('click', sendMessage);
-    
-    messageInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-    
-    // Socket event listeners
-    socket.on('chat message', (message) => {
-      const messageElement = createMessageElement(message);
-      chatMessages.appendChild(messageElement);
-      scrollToBottom();
-    });
-    
-    socket.on('private message', (message) => {
-      alert(`New private message from ${message.sender.username}: ${message.content}`);
-    });
-    
-    socket.on('message deleted', (data) => {
-      const messageElement = document.querySelector(`.message[data-id="${data.id}"]`);
-      if (messageElement) {
-        messageElement.querySelector('.message-text').innerHTML = 
-          `<div class="deleted-message">This message was deleted ${data.deletedBy === 'admin' ? 'by admin' : ''}</div>`;
-      }
-    });
-    
-    socket.on('message edited', (message) => {
-      const messageElement = document.querySelector(`.message[data-id="${message._id}"]`);
-      if (messageElement) {
-        messageElement.querySelector('.message-text').textContent = message.content;
-      }
-    });
-    
-    socket.on('message pinned', (message) => {
-      const messageElement = document.querySelector(`.message[data-id="${message._id}"]`);
-      if (messageElement) {
-        if (message.pinned) {
-          messageElement.classList.add('pinned-message');
-        } else {
-          messageElement.classList.remove('pinned-message');
-        }
-      }
-    });
-    
-    socket.on('user status', (data) => {
-      const userElement = document.querySelector(`.user-item[data-id="${data.userId}"]`);
-      if (userElement) {
-        const onlineDot = userElement.querySelector('.online-dot');
-        if (onlineDot) {
-          onlineDot.style.display = data.online ? 'block' : 'none';
-        }
-      }
-    });
-    
-    // Create message element
-    function createMessageElement(message) {
-      const isSelf = message.sender._id === '<%= user._id %>';
-      
-      return `
-        <div class="message ${isSelf ? 'self' : ''} ${message.pinned ? 'pinned-message' : ''}" data-id="${message._id}">
-          <div class="message-avatar">
-            ${message.sender.username.charAt(0).toUpperCase()}
-            ${message.sender.online ? '<div class="online-dot"></div>' : ''}
-          </div>
+      let messageHTML = `
+        <div class="message ${isSelf ? 'self' : ''}">
+          <img src="/images/default-avatar.png" alt="Avatar" class="message-avatar">
           <div class="message-content">
             <div class="message-header">
-              <span class="message-sender">
-                ${message.sender.username}
-                ${message.sender.role === 'admin' ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}
+              <span class="message-username">
+                ${message.userId.username}
+                ${message.userId.isAdmin ? '<i class="fas fa-shield-alt admin-badge"></i>' : ''}
               </span>
               <span class="message-time">
-                ${new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                ${new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
-            
-            ${message.deleted ? `
-              <div class="message-text deleted-message">
-                This message was deleted ${message.deletedBy === 'admin' ? 'by admin' : ''}
-              </div>
-            ` : `
-              ${message.replyTo ? `
-                <div class="reply-indicator">
-                  Replying to: ${message.replyTo.content.substring(0, 30) + (message.replyTo.content.length > 30 ? '...' : '')}
-                </div>
-              ` : ''}
-              <div class="message-text">
-                ${message.content}
-              </div>
-            `}
-            
+            <p>${message.content}</p>
             <div class="message-actions">
-              ${!message.deleted ? `
-                <div class="message-action" title="Reply" onclick="replyToMessage('${message._id}', '${message.sender.username}')">
-                  <i class="fas fa-reply"></i>
-                </div>
-                ${(isSelf || <%= user.role === 'admin' %>) ? `
-                  <div class="message-action" title="Edit" onclick="editMessage('${message._id}')">
-                    <i class="fas fa-edit"></i>
-                  </div>
-                  <div class="message-action" title="Delete" onclick="deleteMessage('${message._id}')">
-                    <i class="fas fa-trash"></i>
-                  </div>
-                ` : ''}
-                ${<%= user.role === 'admin' %> ? `
-                  <div class="message-action" title="${message.pinned ? 'Unpin' : 'Pin'}" onclick="togglePin('${message._id}')">
-                    <i class="fas fa-thumbtack"></i>
-                  </div>
-                ` : ''}
+              ${(message.userId === userId || isAdmin) ? `
+                <button class="message-action" onclick="editMessage('${message._id}')">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="message-action" onclick="deleteMessage('${message._id}', ${isAdmin})">
+                  <i class="fas fa-trash"></i>
+                </button>
               ` : ''}
+              <button class="message-action" onclick="replyToMessage('${message.userId.username}')">
+                <i class="fas fa-reply"></i>
+              </button>
             </div>
           </div>
         </div>
       `;
+      
+      chatMessages.innerHTML += messageHTML;
+      scrollToBottom();
+    });
+    
+    // Handle deleted messages
+    socket.on('message-deleted', (data) => {
+      const messageElement = document.querySelector(`[data-id="${data.messageId}"]`);
+      if (messageElement) {
+        messageElement.innerHTML = `
+          <div class="message-content">
+            <p><i>This message was deleted by ${data.deletedBy === 'admin' ? 'admin' : 'user'}</i></p>
+          </div>
+        `;
+      }
+    });
+    
+    // Handle typing indicators
+    socket.on('user-typing', (data) => {
+      if (data.userId === userId) return;
+      
+      const typingIndicator = document.getElementById('typingIndicator');
+      typingIndicator.textContent = `${data.username} is typing...`;
+      
+      setTimeout(() => {
+        typingIndicator.textContent = '';
+      }, 3000);
+    });
+    
+    // Handle AI responses
+    socket.on('ai-response', (response) => {
+      const chatMessages = document.getElementById('chatMessages');
+      chatMessages.innerHTML += `
+        <div class="message">
+          <div class="message-content">
+            <div class="message-header">
+              <span class="message-username">
+                <i class="fas fa-robot"></i> AI Assistant
+              </span>
+            </div>
+            <p>${response.content}</p>
+          </div>
+        </div>
+      `;
+      scrollToBottom();
+    });
+    
+    // Handle online users update
+    socket.on('online-users', (userIds) => {
+      document.getElementById('online-count').textContent = userIds.length;
+    });
+    
+    // Message functions
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const content = input.value.trim();
+      
+      if (content) {
+        socket.emit('chat-message', {
+          sessionId,
+          userId,
+          username,
+          content
+        });
+        input.value = '';
+      }
     }
+    
+    function handleTyping() {
+      socket.emit('typing', { 
+        sessionId, 
+        userId,
+        username 
+      });
+    }
+    
+    function deleteMessage(messageId, isAdmin) {
+      if (confirm('Are you sure you want to delete this message?')) {
+        socket.emit('delete-message', {
+          sessionId,
+          messageId,
+          userId,
+          isAdmin
+        });
+      }
+    }
+    
+    function editMessage(messageId) {
+      const newContent = prompt('Edit your message:');
+      if (newContent) {
+        socket.emit('edit-message', {
+          sessionId,
+          messageId,
+          userId,
+          newContent
+        });
+      }
+    }
+    
+    function replyToMessage(username) {
+      const input = document.getElementById('messageInput');
+      input.value = `@${username} `;
+      input.focus();
+    }
+    
+    // AI functions
+    function openAIFeatures() {
+      document.getElementById('aiPanel').style.display = 'block';
+    }
+    
+    function sendAIPrompt() {
+      const prompt = document.getElementById('aiPrompt').value.trim();
+      if (prompt) {
+        socket.emit('chat-message', {
+          sessionId,
+          userId,
+          content: `/GTP ${prompt}`
+        });
+        document.getElementById('aiPrompt').value = '';
+      }
+    }
+    
+    // Group functions
+    function toggleGroupInfo() {
+      const panel = document.getElementById('groupInfoPanel');
+      panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    }
+    
+    function copyGroupLink() {
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => alert('Group link copied to clipboard!'));
+    }
+    
+    // Initialize
+    window.onload = scrollToBottom;
   </script>
 </body>
-</html>
+</html> 
