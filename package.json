@@ -1,7 +1,7 @@
 {
   "name": "vcf-session-generator",
   "version": "4.0.0",
-  "description": "Advanced VCF Session Generator with Community Chat and Admin Dashboard",
+  "description": "Advanced VCF Session Generator with Community Chat",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -17,6 +17,8 @@
     "passport": "^0.6.0",
     "passport-local": "^1.0.0",
     "socket.io": "^4.7.2",
-    "express-socket.io-session": "^1.3.5"
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.33.2",
+    "openai": "^4.40.0"
   }
 }
