@@ -19,7 +19,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer);
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URL || 'mongodb+srv://hephzibarsamuel:sHFaJEdlFlDCaQwb@contact-gain.cbtkalw.mongodb.net/?retryWrites=true&w=majority&appName=Contact-Gain', {
+mongoose.connect(process.env.MONGO_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
@@ -36,19 +36,23 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// FIX: Use separate collection for Express sessions
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'e24c9bf7d58a4c3e9f1a6b8c7d3e2f4981a0b3c4d5e6f7a8b9c0d1e2f3a4b5c6',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ 
-    mongoUrl: process.env.MONGO_URL,
-    ttl: 24 * 60 * 60 
-  }),
   cookie: { 
     secure: process.env.NODE_ENV === 'production', 
     maxAge: 24 * 60 * 60 * 1000 
-  }
+  },
+  store: MongoStore.create({ 
+    mongoUrl: process.env.MONGO_URL,
+    collectionName: 'express_sessions', // FIXED: Separate collection
+    ttl: 24 * 60 * 60 
+  })
 }));
+
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.static('public'));
@@ -141,7 +145,7 @@ const privateMessageSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model('User', userSchema);
-const Session = mongoose.model('Session', sessionSchema);
+const Session = mongoose.model('Session', sessionSchema, 'group_sessions'); // FIXED: Custom collection name
 const Contact = mongoose.model('Contact', contactSchema);
 const Download = mongoose.model('Download', downloadSchema);
 const Message = mongoose.model('Message', messageSchema);
@@ -522,7 +526,7 @@ app.get('/session/:sessionId', async (req, res) => {
     if (!sessionData) return res.status(404).send('Session not found.');
     
     // Check if session is expired
-    if (Date.now() > sessionData.expiresAt && sessionData.status !== 'expired') {
+    if (Date.now() > sessionData.expiresAt.getTime() && sessionData.status !== 'expired') {
       sessionData.status = 'expired';
       await sessionData.save();
     }
@@ -556,7 +560,7 @@ app.post('/delete-session/:sessionId', isAuthenticated, async (req, res) => {
   try {
     const session = await Session.findOne({ sessionId: req.params.sessionId, userId: req.user._id });
     if (!session) return res.status(404).send('Session not found');
-    await session.remove();
+    await Session.deleteOne({ _id: session._id });
     res.redirect('/terminal');
   } catch (err) {
     console.error('Delete session error:', err);
@@ -664,13 +668,30 @@ app.post('/admin/login', (req, res) => {
   }
 });
 
-// Create Session
+// Create Session with collision handling
 app.post('/create-session', isAuthenticated, async (req, res) => {
   const { groupName, timer, whatsappLink } = req.body;
   if (!groupName || !timer) return res.status(400).json({ error: 'Group name and timer are required.' });
   if (isNaN(timer) || timer <= 0 || timer > 1440) return res.status(400).json({ error: 'Timer must be a positive number up to 1440 minutes.' });
   
-  const sessionId = 'GDT' + crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 6);
+  const generateSessionId = () => 'GDT' + crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 6);
+  
+  let sessionId;
+  let sessionExists = true;
+  let attempts = 0;
+  const maxAttempts = 5;
+  
+  // Handle potential session ID collisions
+  while (sessionExists && attempts < maxAttempts) {
+    sessionId = generateSessionId();
+    sessionExists = await Session.exists({ sessionId });
+    attempts++;
+  }
+  
+  if (sessionExists) {
+    return res.status(500).json({ error: 'Failed to generate unique session ID' });
+  }
+  
   const now = Date.now();
   const expiresAt = new Date(now + parseInt(timer) * 60 * 1000);
   
@@ -705,9 +726,11 @@ app.post('/session/:sessionId/contact', async (req, res) => {
     const sessionData = await Session.findOne({ sessionId });
     if (!sessionData) return res.status(404).json({ error: 'Session not found.' });
 
-    if (Date.now() > sessionData.expiresAt) {
-      sessionData.status = 'expired';
-      await sessionData.save();
+    if (Date.now() > sessionData.expiresAt.getTime()) {
+      if (sessionData.status !== 'expired') {
+        sessionData.status = 'expired';
+        await sessionData.save();
+      }
       return res.status(400).json({ error: 'Session has ended.' });
     }
 
