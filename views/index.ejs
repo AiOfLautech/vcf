@@ -390,8 +390,6 @@
             sessionURL.href = data.sessionLink;
             sessionURL.textContent = data.sessionLink;
             sessionLinkDiv.style.display = 'block';
-            // Optional: Uncomment below to auto-redirect to dashboard
-            // window.location.href = '/terminal';
           } else {
             alert('Session creation failed: ' + (data.error || 'Unknown error'));
           }
