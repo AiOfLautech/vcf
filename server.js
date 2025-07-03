@@ -37,7 +37,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// FIX 1: Changed session collection name to prevent conflict
+// Session configuration with separate collection
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -48,7 +48,7 @@ app.use(session({
   },
   store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URL,
-    collectionName: 'express_sessions', // Changed collection name
+    collectionName: 'express_sessions', // Prevent conflict
     ttl: 24 * 60 * 60 
   })
 }));
@@ -83,17 +83,14 @@ const userSchema = new mongoose.Schema({
   lastSeen: { type: Date, default: Date.now }
 });
 
-// FIX 2: Added sparse index to handle null sessionIds
+// Sparse index to handle null values
 const sessionSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   sessionId: { 
     type: String, 
     unique: true, 
     required: true,
-    index: { 
-      unique: true, 
-      sparse: true // Allows multiple null values
-    } 
+    index: { unique: true, sparse: true } 
   },
   groupName: { type: String, required: true },
   whatsappLink: { type: String },
@@ -186,15 +183,20 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// Authentication Middleware
+// Authentication Middleware - FIXED
 const isAuthenticated = (req, res, next) => {
-  if (req.isAuthenticated()) return next();
+  if (req.isAuthenticated() || req.session.adminAuthenticated) {
+    return next();
+  }
   if (req.accepts('json')) return res.status(401).json({ error: 'Authentication required' });
   res.redirect('/login');
 };
 
+// Admin middleware - FIXED
 const isAdmin = (req, res, next) => {
-  if (req.session.isAdmin || (req.user && req.user.isAdmin)) return next();
+  if ((req.user && req.user.isAdmin) || req.session.adminAuthenticated) {
+    return next();
+  }
   res.redirect('/admin/login');
 };
 
@@ -357,9 +359,9 @@ app.get('/login', (req, res) => res.render('login'));
 app.get('/signup', (req, res) => res.render('signup'));
 app.get('/admin/login', (req, res) => res.render('admin-login'));
 
-// FIX 3: Added redirect routes for /profile and /chat
+// Redirect routes - FIXED
 app.get('/profile', isAuthenticated, (req, res) => {
-  res.redirect(`/profile/${req.user._id}`);
+  res.redirect(`/profile/${req.user ? req.user._id : req.session.adminUserId}`);
 });
 
 app.get('/chat', isAuthenticated, (req, res) => {
@@ -369,7 +371,13 @@ app.get('/chat', isAuthenticated, (req, res) => {
 // Terminal (Dashboard)
 app.get('/terminal', isAuthenticated, async (req, res) => {
   try {
-    const sessions = await Session.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    // Handle admin user differently
+    const userId = req.user ? req.user._id : req.session.adminUserId;
+    if (!userId) {
+      return res.redirect('/login');
+    }
+
+    const sessions = await Session.find({ userId }).sort({ createdAt: -1 });
     const totalContacts = await Contact.countDocuments({ sessionId: { $in: sessions.map(s => s.sessionId) } });
     const totalSessions = sessions.length;
     const activeSessions = sessions.filter(s => s.status === 'active').length;
@@ -377,7 +385,7 @@ app.get('/terminal', isAuthenticated, async (req, res) => {
     const avgContacts = totalSessions > 0 ? (totalContacts / totalSessions).toFixed(1) : 0;
 
     res.render('terminal', { 
-      user: req.user, 
+      user: req.user || { isAdmin: true }, 
       sessions,
       stats: {
         totalContacts,
@@ -392,7 +400,7 @@ app.get('/terminal', isAuthenticated, async (req, res) => {
   }
 });
 
-// Admin Dashboard
+// Admin Dashboard - FIXED
 app.get('/admin', isAdmin, async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
@@ -477,7 +485,7 @@ app.get('/chat/:sessionId', isAuthenticated, async (req, res) => {
       groupDescription: group.description,
       messages: messages.reverse(),
       members: membersWithStatus,
-      user: req.user
+      user: req.user || { isAdmin: true }
     });
   } catch (err) {
     console.error('Chat error:', err);
@@ -502,7 +510,7 @@ app.get('/profile/:userId', isAuthenticated, async (req, res) => {
     res.render('profile', {
       user,
       isOnline,
-      currentUser: req.user
+      currentUser: req.user || { isAdmin: true }
     });
   } catch (err) {
     console.error('Profile error:', err);
@@ -576,7 +584,8 @@ app.get('/session/:sessionId', async (req, res) => {
 // Delete Session from Terminal
 app.post('/delete-session/:sessionId', isAuthenticated, async (req, res) => {
   try {
-    const session = await Session.findOne({ sessionId: req.params.sessionId, userId: req.user._id });
+    const userId = req.user ? req.user._id : req.session.adminUserId;
+    const session = await Session.findOne({ sessionId: req.params.sessionId, userId });
     if (!session) return res.status(404).send('Session not found');
     await session.remove();
     res.redirect('/terminal');
@@ -671,18 +680,34 @@ app.post('/login', passport.authenticate('local', {
 app.get('/logout', (req, res) => {
   req.logout((err) => {
     if (err) console.error('Logout error:', err);
+    req.session.destroy();
     res.redirect('/');
   });
 });
 
-// Admin Login
-app.post('/admin/login', (req, res) => {
+// Admin Login - FIXED
+app.post('/admin/login', async (req, res) => {
   const { username, password } = req.body;
-  if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-    req.session.isAdmin = true;
-    res.redirect('/admin');
-  } else {
+  
+  try {
+    const user = await User.findOne({ username, isAdmin: true });
+    if (user && await bcrypt.compare(password, user.password)) {
+      // Create admin session
+      req.session.adminAuthenticated = true;
+      req.session.adminUserId = user._id;
+      return res.redirect('/admin');
+    }
+    
+    // Check system admin credentials
+    if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
+      req.session.adminAuthenticated = true;
+      return res.redirect('/admin');
+    }
+    
     res.render('admin-login', { error: 'Invalid credentials' });
+  } catch (err) {
+    console.error('Admin login error:', err);
+    res.render('admin-login', { error: 'Internal server error' });
   }
 });
 
@@ -692,7 +717,7 @@ app.post('/create-session', isAuthenticated, async (req, res) => {
   if (!groupName || !timer) return res.status(400).json({ error: 'Group name and timer are required.' });
   if (isNaN(timer) || timer <= 0 || timer > 1440) return res.status(400).json({ error: 'Timer must be a positive number up to 1440 minutes.' });
   
-  // FIX 4: Added validation for sessionId uniqueness
+  // Generate unique session ID
   let sessionId;
   let sessionExists;
   let attempts = 0;
@@ -711,8 +736,10 @@ app.post('/create-session', isAuthenticated, async (req, res) => {
   const expiresAt = new Date(now + parseInt(timer) * 60 * 1000);
   
   try {
+    const userId = req.user ? req.user._id : req.session.adminUserId;
+    
     const session = new Session({
-      userId: req.user._id, 
+      userId,
       sessionId, 
       groupName, 
       whatsappLink, 
