@@ -81,7 +81,7 @@ const userSchema = new mongoose.Schema({
 
 const sessionSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  sessionId: { type: String, unique: true, required: true, index: true },
+  sessionId: { type: String, unique: true, required: true },
   groupName: { type: String, required: true },
   whatsappLink: { type: String },
   timer: { type: Number, required: true },
@@ -92,9 +92,6 @@ const sessionSchema = new mongoose.Schema({
   status: { type: String, enum: ['active', 'expired', 'deleted'], default: 'active' },
   groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' }
 });
-
-// Create index with sparse option to handle null values
-sessionSchema.index({ sessionId: 1 }, { unique: true, sparse: true });
 
 const contactSchema = new mongoose.Schema({
   sessionId: { type: String, required: true },
