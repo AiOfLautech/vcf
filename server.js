@@ -42,14 +42,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: true,  // Changed to true to fix session issues
+  saveUninitialized: true,
   cookie: { 
     secure: process.env.NODE_ENV === 'production', 
     maxAge: 24 * 60 * 60 * 1000 
   },
   store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URL,
-    collectionName: 'express_sessions', // Fixed: Separate collection
+    collectionName: 'express_sessions',
     ttl: 24 * 60 * 60 
   })
 }));
@@ -146,7 +146,7 @@ const privateMessageSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model('User', userSchema);
-const Session = mongoose.model('Session', sessionSchema, 'group_sessions'); // Fixed: Custom collection name
+const Session = mongoose.model('Session', sessionSchema, 'group_sessions');
 const Contact = mongoose.model('Contact', contactSchema);
 const Download = mongoose.model('Download', downloadSchema);
 const Message = mongoose.model('Message', messageSchema);
@@ -438,7 +438,7 @@ app.get('/admin', isAdmin, async (req, res) => {
   }
 });
 
-// Chat Interface - FIXED ROUTE
+// Chat Interface
 app.get('/chat/:sessionId', isAuthenticated, async (req, res) => {
   try {
     const sessionId = req.params.sessionId;
@@ -497,7 +497,7 @@ app.get('/chat/:sessionId', isAuthenticated, async (req, res) => {
   }
 });
 
-// User Profile - FIXED ROUTE
+// User Profile
 app.get('/profile/:userId', isAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
@@ -828,10 +828,17 @@ END:VCARD
   }
 });
 
+// Start Server
+const startServer = () => {
+  const PORT = process.env.PORT || 3000;
+  
+  // Ensure server binds to all network interfaces
+  httpServer.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
+
 // Create admin user on startup and start server
 ensureAdminExists().then(() => {
-  mongoose.connection.once('open', () => {
-    const PORT = process.env.PORT || 3000;
-    httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  });
+  startServer();
 });
