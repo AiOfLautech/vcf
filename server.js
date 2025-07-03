@@ -12,13 +12,14 @@ const { Server } = require('socket.io');
 const multer = require('multer');
 const sharp = require('sharp');
 const OpenAI = require('openai');
+const MongoStore = require('connect-mongo');
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URL || 'mongodb+srv://hephzibarsamuel:sHFaJEdlFlDCaQwb@contact-gain.cbtkalw.mongodb.net/?retryWrites=true&w=majority&appName=Contact-Gain', {
+mongoose.connect(process.env.MONGO_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
@@ -35,19 +36,23 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// FIX 1: Changed session collection name to prevent conflict
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'e24c9bf7d58a4c3e9f1a6b8c7d3e2f4981a0b3c4d5e6f7a8b9c0d1e2f3a4b5c6',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    secure: process.env.LINODE_ENV === 'production', 
+    secure: process.env.NODE_ENV === 'production', 
     maxAge: 24 * 60 * 60 * 1000 
   },
-  store: require('connect-mongo').create({ 
+  store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URL,
+    collectionName: 'express_sessions', // Changed collection name
     ttl: 24 * 60 * 60 
   })
 }));
+
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.static('public'));
@@ -78,9 +83,18 @@ const userSchema = new mongoose.Schema({
   lastSeen: { type: Date, default: Date.now }
 });
 
+// FIX 2: Added sparse index to handle null sessionIds
 const sessionSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  sessionId: { type: String, unique: true, required: true },
+  sessionId: { 
+    type: String, 
+    unique: true, 
+    required: true,
+    index: { 
+      unique: true, 
+      sparse: true // Allows multiple null values
+    } 
+  },
   groupName: { type: String, required: true },
   whatsappLink: { type: String },
   timer: { type: Number, required: true },
@@ -342,6 +356,15 @@ app.get('/', (req, res) => res.render('index'));
 app.get('/login', (req, res) => res.render('login'));
 app.get('/signup', (req, res) => res.render('signup'));
 app.get('/admin/login', (req, res) => res.render('admin-login'));
+
+// FIX 3: Added redirect routes for /profile and /chat
+app.get('/profile', isAuthenticated, (req, res) => {
+  res.redirect(`/profile/${req.user._id}`);
+});
+
+app.get('/chat', isAuthenticated, (req, res) => {
+  res.redirect('/terminal');
+});
 
 // Terminal (Dashboard)
 app.get('/terminal', isAuthenticated, async (req, res) => {
@@ -669,7 +692,21 @@ app.post('/create-session', isAuthenticated, async (req, res) => {
   if (!groupName || !timer) return res.status(400).json({ error: 'Group name and timer are required.' });
   if (isNaN(timer) || timer <= 0 || timer > 1440) return res.status(400).json({ error: 'Timer must be a positive number up to 1440 minutes.' });
   
-  const sessionId = 'GDT' + crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 6);
+  // FIX 4: Added validation for sessionId uniqueness
+  let sessionId;
+  let sessionExists;
+  let attempts = 0;
+  
+  do {
+    sessionId = 'GDT' + crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 6);
+    sessionExists = await Session.findOne({ sessionId });
+    attempts++;
+  } while (sessionExists && attempts < 5);
+  
+  if (sessionExists) {
+    return res.status(500).json({ error: 'Failed to generate unique session ID' });
+  }
+
   const now = Date.now();
   const expiresAt = new Date(now + parseInt(timer) * 60 * 1000);
   
