@@ -13,7 +13,6 @@ const multer = require('multer');
 const sharp = require('sharp');
 const OpenAI = require('openai');
 const MongoStore = require('connect-mongo');
-const fs = require('fs');
 
 const app = express();
 const httpServer = createServer(app);
@@ -37,23 +36,19 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Fix: Use separate collection for Express sessions
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   cookie: { 
     secure: process.env.NODE_ENV === 'production', 
     maxAge: 24 * 60 * 60 * 1000 
   },
   store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URL,
-    collectionName: 'express_sessions',
     ttl: 24 * 60 * 60 
   })
 }));
-
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.static('public'));
@@ -86,7 +81,7 @@ const userSchema = new mongoose.Schema({
 
 const sessionSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  sessionId: { type: String, unique: true, required: true },
+  sessionId: { type: String, unique: true, required: true, index: true },
   groupName: { type: String, required: true },
   whatsappLink: { type: String },
   timer: { type: Number, required: true },
@@ -97,6 +92,9 @@ const sessionSchema = new mongoose.Schema({
   status: { type: String, enum: ['active', 'expired', 'deleted'], default: 'active' },
   groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' }
 });
+
+// Create index with sparse option to handle null values
+sessionSchema.index({ sessionId: 1 }, { unique: true, sparse: true });
 
 const contactSchema = new mongoose.Schema({
   sessionId: { type: String, required: true },
@@ -146,7 +144,7 @@ const privateMessageSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model('User', userSchema);
-const Session = mongoose.model('Session', sessionSchema, 'group_sessions');
+const Session = mongoose.model('Session', sessionSchema);
 const Contact = mongoose.model('Contact', contactSchema);
 const Download = mongoose.model('Download', downloadSchema);
 const Message = mongoose.model('Message', messageSchema);
@@ -181,42 +179,13 @@ passport.deserializeUser(async (id, done) => {
 // Authentication Middleware
 const isAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) return next();
+  if (req.accepts('json')) return res.status(401).json({ error: 'Authentication required' });
   res.redirect('/login');
 };
 
 const isAdmin = (req, res, next) => {
-  if (req.isAuthenticated() && req.user.isAdmin) {
-    return next();
-  }
+  if (req.session.isAdmin || (req.user && req.user.isAdmin)) return next();
   res.redirect('/admin/login');
-};
-
-// Ensure admin user exists on startup
-const ensureAdminExists = async () => {
-  const adminUsername = process.env.ADMIN_USERNAME;
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  
-  if (!adminUsername || !adminPassword) {
-    console.warn('ADMIN_USERNAME or ADMIN_PASSWORD not set. Skipping admin user creation.');
-    return;
-  }
-  
-  try {
-    let adminUser = await User.findOne({ username: adminUsername });
-    
-    if (!adminUser) {
-      const hashedPassword = await bcrypt.hash(adminPassword, 10);
-      adminUser = new User({
-        username: adminUsername,
-        password: hashedPassword,
-        isAdmin: true
-      });
-      await adminUser.save();
-      console.log('Admin user created');
-    }
-  } catch (err) {
-    console.error('Error creating admin user:', err);
-  }
 };
 
 // Socket.IO Logic
@@ -527,12 +496,6 @@ app.post('/upload-profile-pic', isAuthenticated, upload.single('avatar'), async 
   try {
     if (!req.file) return res.status(400).send('No file uploaded');
     
-    // Create uploads directory if not exists
-    const uploadDir = path.join(__dirname, 'public', 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    
     // Process image
     const buffer = await sharp(req.file.buffer)
       .resize(300, 300)
@@ -540,9 +503,9 @@ app.post('/upload-profile-pic', isAuthenticated, upload.single('avatar'), async 
       .toBuffer();
     
     const filename = `${req.user._id}-${Date.now()}.png`;
-    const filepath = path.join(uploadDir, filename);
+    const filepath = path.join(__dirname, 'public', 'uploads', filename);
     
-    fs.writeFileSync(filepath, buffer);
+    require('fs').writeFileSync(filepath, buffer);
     
     // Update user
     await User.findByIdAndUpdate(req.user._id, { avatar: `/uploads/${filename}` });
@@ -562,7 +525,7 @@ app.get('/session/:sessionId', async (req, res) => {
     if (!sessionData) return res.status(404).send('Session not found.');
     
     // Check if session is expired
-    if (Date.now() > sessionData.expiresAt.getTime() && sessionData.status !== 'expired') {
+    if (Date.now() > sessionData.expiresAt && sessionData.status !== 'expired') {
       sessionData.status = 'expired';
       await sessionData.save();
     }
@@ -596,7 +559,7 @@ app.post('/delete-session/:sessionId', isAuthenticated, async (req, res) => {
   try {
     const session = await Session.findOne({ sessionId: req.params.sessionId, userId: req.user._id });
     if (!session) return res.status(404).send('Session not found');
-    await Session.deleteOne({ _id: session._id });
+    await session.remove();
     res.redirect('/terminal');
   } catch (err) {
     console.error('Delete session error:', err);
@@ -681,7 +644,7 @@ app.post('/signup', async (req, res) => {
 
 // User Login
 app.post('/login', passport.authenticate('local', {
-  successRedirect: '/terminal',
+  successRedirect: '/',
   failureRedirect: '/login',
   failureFlash: false
 }));
@@ -694,36 +657,23 @@ app.get('/logout', (req, res) => {
 });
 
 // Admin Login
-app.post('/admin/login', passport.authenticate('local', {
-  successRedirect: '/admin',
-  failureRedirect: '/admin/login',
-  failureFlash: false
-}));
+app.post('/admin/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
+    req.session.isAdmin = true;
+    res.redirect('/admin');
+  } else {
+    res.render('admin-login', { error: 'Invalid credentials' });
+  }
+});
 
-// Create Session with collision handling
+// Create Session
 app.post('/create-session', isAuthenticated, async (req, res) => {
   const { groupName, timer, whatsappLink } = req.body;
   if (!groupName || !timer) return res.status(400).json({ error: 'Group name and timer are required.' });
   if (isNaN(timer) || timer <= 0 || timer > 1440) return res.status(400).json({ error: 'Timer must be a positive number up to 1440 minutes.' });
   
-  const generateSessionId = () => 'GDT' + crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 6);
-  
-  let sessionId;
-  let sessionExists = true;
-  let attempts = 0;
-  const maxAttempts = 5;
-  
-  // Handle potential session ID collisions
-  while (sessionExists && attempts < maxAttempts) {
-    sessionId = generateSessionId();
-    sessionExists = await Session.exists({ sessionId });
-    attempts++;
-  }
-  
-  if (sessionExists) {
-    return res.status(500).json({ error: 'Failed to generate unique session ID' });
-  }
-  
+  const sessionId = 'GDT' + crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 6);
   const now = Date.now();
   const expiresAt = new Date(now + parseInt(timer) * 60 * 1000);
   
@@ -758,11 +708,9 @@ app.post('/session/:sessionId/contact', async (req, res) => {
     const sessionData = await Session.findOne({ sessionId });
     if (!sessionData) return res.status(404).json({ error: 'Session not found.' });
 
-    if (Date.now() > sessionData.expiresAt.getTime()) {
-      if (sessionData.status !== 'expired') {
-        sessionData.status = 'expired';
-        await sessionData.save();
-      }
+    if (Date.now() > sessionData.expiresAt) {
+      sessionData.status = 'expired';
+      await sessionData.save();
       return res.status(400).json({ error: 'Session has ended.' });
     }
 
@@ -829,16 +777,7 @@ END:VCARD
 });
 
 // Start Server
-const startServer = () => {
+mongoose.connection.once('open', () => {
   const PORT = process.env.PORT || 3000;
-  
-  // Ensure server binds to all network interfaces
-  httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-};
-
-// Create admin user on startup and start server
-ensureAdminExists().then(() => {
-  startServer();
+  httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });
