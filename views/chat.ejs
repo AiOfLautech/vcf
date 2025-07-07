@@ -1,1197 +1,547 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Community Chat | Contact Gain</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary: #6366f1;
-      --primary-light: #818cf8;
-      --dark: #1e293b;
-      --light: #f8fafc;
-      --gray: #94a3b8;
-      --card-bg: #ffffff;
-      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
-    }
-
-    body {
-      height: 100vh;
-      display: flex;
-      background: #f1f5f9;
-    }
-
-    .chat-container {
-      display: flex;
-      width: 100%;
-      height: 100vh;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      width: 300px;
-      background: var(--dark);
-      color: white;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .group-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      cursor: pointer;
-    }
-
-    .group-avatar {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      position: relative;
-    }
-
-    .online-dot {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      width: 12px;
-      height: 12px;
-      background: #10b981;
-      border-radius: 50%;
-      border: 2px solid var(--dark);
-    }
-
-    .group-info {
-      flex-grow: 1;
-    }
-
-    .group-name {
-      font-weight: 600;
-      font-size: 1.1rem;
-    }
-
-    .online-count {
-      font-size: 0.9rem;
-      color: var(--gray);
-    }
-
-    .members-list {
-      flex-grow: 1;
-      overflow-y: auto;
-      margin-top: 1rem;
-    }
-
-    .member {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 0.8rem;
-      border-radius: 8px;
-      margin-bottom: 0.5rem;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .member:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .member-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--primary-light);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-
-    .member-online {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      width: 10px;
-      height: 10px;
-      background: #10b981;
-      border-radius: 50%;
-      border: 2px solid var(--dark);
-    }
-
-    .member-info {
-      flex-grow: 1;
-    }
-
-    .member-name {
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .admin-badge {
-      color: gold;
-      font-size: 0.8rem;
-    }
-
-    .member-status {
-      font-size: 0.8rem;
-      color: var(--gray);
-    }
-
-    .group-actions {
-      margin-top: auto;
-      padding-top: 1rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .action-btn {
-      width: 100%;
-      padding: 0.8rem;
-      background: rgba(99, 102, 241, 0.15);
-      border: none;
-      border-radius: 8px;
-      color: var(--primary-light);
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.8rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .action-btn:hover {
-      background: rgba(99, 102, 241, 0.25);
-    }
-
-    /* Chat Area */
-    .chat-area {
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .chat-header {
-      padding: 1rem 1.5rem;
-      background: var(--card-bg);
-      border-bottom: 1px solid #e2e8f0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .chat-title {
-      font-weight: 600;
-      font-size: 1.2rem;
-      color: var(--dark);
-    }
-
-    .ai-btn {
-      padding: 0.5rem 1rem;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 20px;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .messages-container {
-      flex-grow: 1;
-      padding: 1.5rem;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .message {
-      max-width: 70%;
-      padding: 0.8rem 1rem;
-      border-radius: 12px;
-      margin-bottom: 1rem;
-      position: relative;
-    }
-
-    .message-sent {
-      align-self: flex-end;
-      background: var(--primary);
-      color: white;
-      border-bottom-right-radius: 0;
-    }
-
-    .message-received {
-      align-self: flex-start;
-      background: #e2e8f0;
-      color: var(--dark);
-      border-bottom-left-radius: 0;
-    }
-
-    .ai-message {
-      align-self: flex-start;
-      background: #dbeafe;
-      color: var(--dark);
-      border-bottom-left-radius: 0;
-      border-left: 3px solid var(--primary);
-    }
-
-    .message-info {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 0.5rem;
-      font-size: 0.8rem;
-      opacity: 0.8;
-    }
-
-    .message-actions {
-      position: absolute;
-      top: -20px;
-      right: 0;
-      background: white;
-      border-radius: 20px;
-      box-shadow: var(--card-shadow);
-      display: none;
-    }
-
-    .message:hover .message-actions {
-      display: flex;
-    }
-
-    .action-icon {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-
-    .action-icon:hover {
-      background: #f1f5f9;
-    }
-
-    .pinned-message {
-      background: #fffbeb;
-      border-left: 3px solid #f59e0b;
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 1.5rem;
-    }
-
-    .pinned-label {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: #f59e0b;
-      font-weight: 500;
-      margin-bottom: 0.5rem;
-    }
-
-    .typing-indicator {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: #f1f5f9;
-      border-radius: 20px;
-      align-self: flex-start;
-      margin-bottom: 1rem;
-    }
-
-    .typing-dots {
-      display: flex;
-      gap: 0.3rem;
-    }
-
-    .typing-dot {
-      width: 8px;
-      height: 8px;
-      background: var(--gray);
-      border-radius: 50%;
-      animation: pulse 1.5s infinite;
-    }
-
-    .typing-dot:nth-child(2) {
-      animation-delay: 0.5s;
-    }
-
-    .typing-dot:nth-child(3) {
-      animation-delay: 1s;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 1; }
-    }
-
-    .input-area {
-      padding: 1rem;
-      background: var(--card-bg);
-      border-top: 1px solid #e2e8f0;
-      display: flex;
-      gap: 0.8rem;
-      position: relative;
-    }
-
-    .message-input {
-      flex-grow: 1;
-      padding: 0.8rem 1.2rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 24px;
-      resize: none;
-      max-height: 120px;
-    }
-
-    .upload-btn, .send-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-
-    .upload-btn {
-      background: #f1f5f9;
-      color: var(--dark);
-    }
-
-    .send-btn {
-      background: var(--primary);
-      color: white;
-    }
-
-    .deleted-message {
-      font-style: italic;
-      color: var(--gray);
-      padding: 0.8rem;
-      background: #f1f5f9;
-      border-radius: 8px;
-    }
-
-    .reply-indicator {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem;
-      background: rgba(99, 102, 241, 0.1);
-      border-radius: 8px;
-      margin-bottom: 0.5rem;
-      font-size: 0.9rem;
-    }
-
-    .close-reply {
-      cursor: pointer;
-    }
-
-    /* AI Command Modal */
-    .ai-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      display: none;
-    }
-
-    .ai-modal-content {
-      background: white;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 600px;
-      overflow: hidden;
-    }
-
-    .ai-modal-header {
-      padding: 1.5rem;
-      background: var(--primary);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .ai-modal-body {
-      padding: 1.5rem;
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-
-    .command-list {
-      font-family: 'Courier New', monospace;
-      font-size: 14px;
-      background: #1a1f2d;
-      color: white;
-      padding: 1.5rem;
-      border-radius: 8px;
-      line-height: 1.6;
-    }
-
-    .command-header {
-      color: #00C1FF;
-      margin-bottom: 1rem;
-    }
-
-    .command-category {
-      margin: 1.5rem 0;
-    }
-
-    .category-header {
-      color: #f59e0b;
-      margin-bottom: 0.5rem;
-    }
-
-    .command-item {
-      margin-left: 1rem;
-      color: #49cc90;
-    }
-
-    /* Profile Modal */
-    .profile-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      display: none;
-    }
-
-    .profile-content {
-      background: white;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 500px;
-      overflow: hidden;
-    }
-
-    .profile-header {
-      padding: 1.5rem;
-      background: var(--primary);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .profile-body {
-      padding: 1.5rem;
-    }
-
-    .profile-info {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .profile-avatar {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      background: var(--primary-light);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      position: relative;
-    }
-
-    .profile-online {
-      position: absolute;
-      bottom: 5px;
-      right: 5px;
-      width: 20px;
-      height: 20px;
-      background: #10b981;
-      border-radius: 50%;
-      border: 3px solid white;
-    }
-
-    .profile-name {
-      font-size: 1.5rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .profile-details {
-      width: 100%;
-    }
-
-    .detail-item {
-      display: flex;
-      margin-bottom: 1rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    .detail-label {
-      width: 120px;
-      font-weight: 500;
-      color: var(--gray);
-    }
-
-    .detail-value {
-      flex-grow: 1;
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1.5rem;
-    }
-
-    .modal-btn {
-      flex: 1;
-      padding: 0.8rem;
-      border-radius: 8px;
-      font-weight: 500;
-      cursor: pointer;
-      text-align: center;
-    }
-
-    .message-btn {
-      background: var(--primary);
-      color: white;
-    }
-
-    .close-btn {
-      background: #f1f5f9;
-      color: var(--dark);
-    }
-
-    /* AI Command List */
-    .ai-commands {
-      position: absolute;
-      bottom: 70px;
-      left: 1rem;
-      right: 1rem;
-      background: white;
-      border-radius: 12px;
-      box-shadow: var(--card-shadow);
-      padding: 1rem;
-      display: none;
-      z-index: 100;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
-    .ai-command-item {
-      padding: 0.8rem;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .ai-command-item:hover {
-      background: #f1f5f9;
-    }
-
-    /* AI Response Button */
-    .ai-response-button {
-      display: inline-block;
-      margin-top: 0.8rem;
-      padding: 0.5rem 1rem;
-      background: #10b981;
-      color: white;
-      border-radius: 20px;
-      text-decoration: none;
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
-
-    .ai-response-button:hover {
-      background: #0da271;
-    }
-
-    @media (max-width: 768px) {
-      .chat-container {
-        flex-direction: column;
-      }
-      
-      .sidebar {
-        width: 100%;
-        height: 300px;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Chat | Contact Gain</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+            --card-bg: #ffffff;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            background-color: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+        }
+        .chat-container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 300px;
+            background: var(--dark);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .group-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+        .group-pic {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .group-info {
+            flex-grow: 1;
+        }
+        .group-name {
+            font-weight: 600;
+        }
+        .online-count {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+        .members-list {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .member {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .member:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .member-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .member-name {
+            flex-grow: 1;
+            color: white;
+        }
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+            display: none;
+        }
+        .online .online-dot {
+            display: block;
+        }
+        .verified {
+            color: #10b981;
+        }
+        .chat-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            box-shadow: var(--card-shadow);
+        }
+        .messages {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        .message {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 1rem;
+            max-width: 70%;
+        }
+        .message.own {
+            align-self: flex-end;
+        }
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+        .sender-pic {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .sender-name {
+            font-weight: 600;
+            color: var(--dark);
+        }
+        .timestamp {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+        .message-content {
+            padding: 0.8rem;
+            border-radius: 8px;
+            background: #f1f5f9;
+            position: relative;
+        }
+        .message.own .message-content {
+            background: var(--primary-light);
+            color: white;
+        }
+        .message-actions {
+            display: none;
+            position: absolute;
+            top: -25px;
+            right: 10px;
+            gap: 0.5rem;
+        }
+        .message:hover .message-actions {
+            display: flex;
+        }
+        .action-btn {
+            padding: 0.3rem 0.6rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .action-btn:hover {
+            background: var(--primary-light);
+        }
+        .deleted {
+            font-style: italic;
+            color: var(--gray);
+        }
+        .pinned {
+            border-left: 4px solid var(--primary);
+        }
+        .reply {
+            background: #e2e8f0;
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .ai-response {
+            background: #f0f0f0;
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .input-area {
+            display: flex;
+            padding: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        .message-input {
+            flex-grow: 1;
+            padding: 0.8rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            resize: none;
+            margin-right: 0.5rem;
+        }
+        .send-btn, .upload-btn {
+            padding: 0.8rem;
+            background: var(--primary);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+        }
+        .send-btn:hover, .upload-btn:hover {
+            background: var(--primary-light);
+        }
+        .typing-indicator {
+            font-size: 0.85rem;
+            color: var(--gray);
+            padding: 0.5rem 1rem;
+        }
+        .command-dropdown {
+            position: absolute;
+            bottom: 60px;
+            left: 1rem;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            padding: 0.5rem;
+            z-index: 10;
+        }
+        .command-btn {
+            display: block;
+            padding: 0.5rem 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin: 0.2rem 0;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+        }
+        .command-btn:hover {
+            background: var(--primary-light);
+        }
+        @media (max-width: 768px) {
+            .chat-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+            .messages {
+                max-height: 50vh;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="chat-container">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <div class="group-header" id="groupInfo">
-        <div class="group-avatar">
-          <i class="fas fa-users"></i>
-          <div class="online-dot"></div>
+    <div class="chat-container">
+        <div class="sidebar">
+            <div class="group-header" onclick="toggleGroupInfo()">
+                <img src="<%= group.profilePicture %>" class="group-pic" alt="Group Picture">
+                <div class="group-info">
+                    <div class="group-name"><%= group.name %></div>
+                    <div class="online-count"><%= group.members.filter(m => m.isOnline).length %> online</div>
+                </div>
+            </div>
+            <div id="groupInfo" style="display: none; padding: 1rem; background: rgba(255, 255, 255, 0.1); border-radius: 8px; margin-bottom: 1rem;">
+                <p><strong>Description:</strong> <%= group.description %></p>
+                <p><strong>Members:</strong> <%= group.members.length %></p>
+                <p><strong>Link:</strong> <span id="groupLink"><%= `${req.protocol}://${req.get('host')}/chat` %></span></p>
+                <button onclick="copyGroupLink()" class="action-btn"><i class="fas fa-copy"></i> Copy Link</button>
+            </div>
+            <div class="members-list">
+                <% users.forEach(member => { %>
+                    <div class="member <%= member.isOnline ? 'online' : '' %>">
+                        <a href="/profile/<%= member._id %>"><img src="<%= member.profilePicture %>" class="member-pic" alt="<%= member.username %>"></a>
+                        <a href="/profile/<%= member._id %>" class="member-name"><%= member.username %> <%= member.isAdmin ? '<i class="fas fa-check-circle verified"></i>' : '' %></a>
+                        <span class="online-dot"></span>
+                        <button onclick="startPrivateChat('<%= member._id %>')" class="action-btn"><i class="fas fa-envelope"></i></button>
+                    </div>
+                <% }); %>
+            </div>
         </div>
-        <div class="group-info">
-          <div class="group-name">Main Community</div>
-          <div class="online-count"><span id="onlineCount">0</span> online</div>
+        <div class="chat-area">
+            <div class="messages" id="messages">
+                <% messages.forEach(msg => { %>
+                    <div class="message <%= msg.sender._id.toString() === user._id.toString() ? 'own' : '' %> <%= msg.isPinned ? 'pinned' : '' %>" data-id="<%= msg._id %>">
+                        <div class="message-header">
+                            <img src="<%= msg.sender.profilePicture %>" class="sender-pic" alt="<%= msg.sender.username %>">
+                            <span class="sender-name"><%= msg.sender.username %> <%= msg.sender.isAdmin ? '<i class="fas fa-check-circle verified"></i>' : '' %></span>
+                            <span class="timestamp"><%= new Date(msg.timestamp).toLocaleTimeString() %></span>
+                        </div>
+                        <div class="message-content <%= msg.isAI ? 'ai-response' : '' %>">
+                            <% if (msg.replyTo) { %>
+                                <div class="reply"><%= msg.replyTo.text.substring(0, 50) %>...</div>
+                            <% } %>
+                            <% if (msg.isDeleted) { %>
+                                <span class="deleted"><%= msg.deletedByAdmin ? 'This message was deleted by admin' : 'This message was deleted' %></span>
+                            <% } else { %>
+                                <%= msg.text %>
+                                <% if (msg.imageUrl) { %>
+                                    <img src="<%= msg.imageUrl %>" alt="Uploaded Image" style="max-width: 100%; border-radius: 8px; margin-top: 0.5rem;">
+                                <% } %>
+                                <% if (msg.isEdited) { %>
+                                    <span style="font-size: 0.8rem; color: var(--gray);">(edited)</span>
+                                <% } %>
+                            <% } %>
+                            <% if (!msg.isDeleted && (msg.sender._id.toString() === user._id.toString() || user.isAdmin)) { %>
+                                <div class="message-actions">
+                                    <% if (msg.sender._id.toString() === user._id.toString()) { %>
+                                        <button onclick="copyMessage('<%= msg._id %>')" class="action-btn"><i class="fas fa-copy"></i></button>
+                                        <button onclick="editMessage('<%= msg._id %>')" class="action-btn"><i class="fas fa-edit"></i></button>
+                                    <% } %>
+                                    <button onclick="deleteMessage('<%= msg._id %>')" class="action-btn"><i class="fas fa-trash"></i></button>
+                                    <% if (user.isAdmin) { %>
+                                        <button onclick="pinMessage('<%= msg._id %>')" class="action-btn"><i class="fas fa-thumbtack"></i></button>
+                                    <% } %>
+                                    <button onclick="replyToMessage('<%= msg._id %>')" class="action-btn"><i class="fas fa-reply"></i></button>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+            <div class="typing-indicator" id="typingIndicator"></div>
+            <div class="input-area">
+                <textarea id="messageInput" class="message-input" placeholder="Type a message..." rows="1"></textarea>
+                <input type="file" id="imageUpload" style="display: none;" accept="image/*">
+                <button class="upload-btn" onclick="document.getElementById('imageUpload').click()"><i class="fas fa-image"></i></button>
+                <button id="sendBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
+            </div>
+            <div id="commandDropdown" class="command-dropdown" style="display: none;"></div>
         </div>
-      </div>
-      
-      <div class="members-list" id="membersList">
-        <!-- Members will be populated here -->
-      </div>
-      
-      <div class="group-actions">
-        <button class="action-btn" id="aiButton">
-          <i class="fas fa-hashtag"></i> AI Assistant
-        </button>
-        <button class="action-btn" onclick="location.href='/terminal'">
-          <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </button>
-      </div>
     </div>
-    
-    <!-- Chat Area -->
-    <div class="chat-area">
-      <div class="chat-header">
-        <div class="chat-title">Community Chat</div>
-        <button class="ai-btn" id="aiChatButton">
-          <i class="fas fa-robot"></i> AI Assistant
-        </button>
-      </div>
-      
-      <div class="messages-container" id="messagesContainer">
-        <!-- Messages will be populated here -->
-      </div>
-      
-      <div class="input-area">
-        <textarea class="message-input" id="messageInput" placeholder="Type a message..." rows="1"></textarea>
-        <div class="upload-btn">
-          <i class="fas fa-paperclip"></i>
-          <input type="file" id="fileUpload" style="display: none;">
-        </div>
-        <div class="send-btn" id="sendButton">
-          <i class="fas fa-paper-plane"></i>
-        </div>
-        
-        <!-- AI Command List -->
-        <div class="ai-commands" id="aiCommands">
-          <!-- AI commands will be populated here -->
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- AI Command Modal -->
-  <div class="ai-modal" id="aiModal">
-    <div class="ai-modal-content">
-      <div class="ai-modal-header">
-        <h3>AI Commands</h3>
-        <i class="fas fa-times" id="closeAIModal"></i>
-      </div>
-      <div class="ai-modal-body">
-        <div class="command-list">
-          <div class="command-header">╭══〘〘 𝙶𝙾𝙳/𝚂 𝚉𝙴𝙰𝙻 〙〙═⊷</div>
-          <div class="command-item">┃❍ Pʀᴇғɪx:   /</div>
-          <div class="command-item">┃❍ ᴏᴡɴᴇʀ:  @𝙰i𝙾f𝙻autech</div>
-          <div class="command-item">┃❍ Pʟᴜɢɪɴs:  𝟐𝟓</div>
-          <div class="command-item">┃❍ Vᴇʀsɪᴏɴ:  𝟐.𝟎.𝟎</div>
-          <div class="command-item">┃❍ Uᴘᴛɪᴍᴇ:  𝟏𝟒d 𝟐𝟏h 𝟐𝟎m 𝟑𝟗s</div>
-          <div class="command-item">┃❍ Tɪᴍᴇ Nᴏᴡ:  𝟎𝟑:𝟎𝟎:𝟓𝟗 pm</div>
-          <div class="command-item">┃❍ Dᴀᴛᴇ Tᴏᴅᴀʏ:  𝟎𝟕/𝟎𝟕/𝟐𝟎𝟐𝟓</div>
-          <div class="command-item">┃❍ Tɪᴍᴇ Zᴏɴᴇ:  𝙰frica/𝙻agos</div>
-          <div class="command-item">┃❍ Sᴇʀᴠᴇʀ Rᴀᴍ:  𝟕𝟒.𝟖𝟏 𝙶𝙱/𝟏𝟐𝟓.𝟕𝟕 𝙶𝙱</div>
-          <div class="command-item">╰═════════════════⊷</div>
-          
-          <div class="command-category">
-            <div class="category-header">╭─── 『 𝙰𝙸 』</div>
-            <div class="command-item">✧ /flux</div>
-            <div class="command-item">✧ /gemini</div>
-            <div class="command-item">✧ /gpt</div>
-            <div class="command-item">✧ /luminai</div>
-            <div class="command-item">✧ /sd</div>
-            <div class="command-item">╰─────────────────◊</div>
-          </div>
-          
-          <div class="command-category">
-            <div class="category-header">╭─── 『 𝙰𝙽𝙸𝙼𝙴 』</div>
-            <div class="command-item">✧ /konachan</div>
-            <div class="command-item">✧ /neko</div>
-            <div class="command-item">✧ /waifu</div>
-            <div class="command-item">╰─────────────────◊</div>
-          </div>
-          
-          <div class="command-category">
-            <div class="category-header">╭─── 『 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳𝙴𝚁 』</div>
-            <div class="command-item">✧ /apk</div>
-            <div class="command-item">✧ /gitclone</div>
-            <div class="command-item">✧ /play</div>
-            <div class="command-item">✧ /video</div>
-            <div class="command-item">✧ /ytmp3</div>
-            <div class="command-item">✧ /ytmp4</div>
-            <div class="command-item">╰─────────────────◊</div>
-          </div>
-          
-          <div class="command-category">
-            <div class="category-header">╭─── 『 𝙶𝙴𝙽𝙴𝚁𝙰𝙻 』</div>
-            <div class="command-item">✧ /help</div>
-            <div class="command-item">✧ /menu</div>
-            <div class="command-item">✧ /ping</div>
-            <div class="command-item">✧ /repo</div>
-            <div class="command-item">✧ /system</div>
-            <div class="command-item">✧ /uptime</div>
-            <div class="command-item">╰─────────────────◊</div>
-          </div>
-          
-          <div class="command-category">
-            <div class="category-header">╭─── 『 𝙽𝚂𝙵𝚆 』</div>
-            <div class="command-item">✧ /hneko</div>
-            <div class="command-item">✧ /hwaifu</div>
-            <div class="command-item">╰─────────────────◊</div>
-          </div>
-          
-          <div class="command-category">
-            <div class="category-header">╭─── 『 𝚂𝙴𝙰𝚁𝙲𝙷 』</div>
-            <div class="command-item">✧ /wikipedia</div>
-            <div class="command-item">╰─────────────────◊</div>
-          </div>
-          
-          <div class="command-category">
-            <div class="category-header">╭─── 『 𝚃𝙾𝙾𝙻𝚂 』</div>
-            <div class="command-item">✧ /createqr</div>
-            <div class="command-item">✧ /pastebin</div>
-            <div class="command-item">╰─────────────────◊</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Profile Modal -->
-  <div class="profile-modal" id="profileModal">
-    <div class="profile-content">
-      <div class="profile-header">
-        <h3>User Profile</h3>
-        <i class="fas fa-times" id="closeProfile"></i>
-      </div>
-      <div class="profile-body" id="profileBody">
-        <!-- Profile content will be populated here -->
-      </div>
-    </div>
-  </div>
-  
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const userId = '<%= user._id %>';
-    const isAdmin = <%= user.isAdmin %>;
-    const groupId = '<%= group._id %>';
-    const whatsappLink = '<%= whatsappLink %>';
-    
-    // Join chat on page load
-    socket.emit('join', { userId });
-    
-    // DOM elements
-    const messagesContainer = document.getElementById('messagesContainer');
-    const messageInput = document.getElementById('messageInput');
-    const sendButton = document.getElementById('sendButton');
-    const membersList = document.getElementById('membersList');
-    const onlineCount = document.getElementById('onlineCount');
-    const aiModal = document.getElementById('aiModal');
-    const aiButton = document.getElementById('aiButton');
-    const aiChatButton = document.getElementById('aiChatButton');
-    const closeAIModal = document.getElementById('closeAIModal');
-    const profileModal = document.getElementById('profileModal');
-    const profileBody = document.getElementById('profileBody');
-    const closeProfile = document.getElementById('closeProfile');
-    const aiCommands = document.getElementById('aiCommands');
-    
-    // Render messages
-    function renderMessages(messages) {
-      messagesContainer.innerHTML = '';
-      
-      // Add pinned messages first
-      const pinnedMessages = messages.filter(msg => msg.pinned);
-      if (pinnedMessages.length > 0) {
-        pinnedMessages.forEach(msg => {
-          const messageEl = createMessageElement(msg, true);
-          messagesContainer.appendChild(messageEl);
+    <script>
+        const socket = io();
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const commandDropdown = document.getElementById('commandDropdown');
+        let replyToId = null;
+
+        socket.on('chat message', (msg) => {
+            addMessage(msg);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         });
-        
-        const separator = document.createElement('div');
-        separator.innerHTML = '<div style="text-align: center; margin: 1rem 0; color: var(--gray);">--- Recent Messages ---</div>';
-        messagesContainer.appendChild(separator);
-      }
-      
-      // Add other messages
-      messages.filter(msg => !msg.pinned).forEach(msg => {
-        const messageEl = createMessageElement(msg, false);
-        messagesContainer.appendChild(messageEl);
-      });
-      
-      scrollToBottom();
-    }
-    
-    function createMessageElement(msg, isPinned) {
-      const isSent = msg.sender._id.toString() === userId;
-      const isDeleted = msg.isDeleted;
-      const isPinnedMsg = msg.pinned;
-      const isAI = msg.sender._id.toString() === 'ai';
-      
-      const messageEl = document.createElement('div');
-      
-      if (isPinned) {
-        messageEl.className = 'pinned-message';
-        messageEl.innerHTML = `
-          <div class="pinned-label">
-            <i class="fas fa-thumbtack"></i> Pinned Message
-          </div>
-          <div class="message ${isSent ? 'message-sent' : 'message-received'}">
-            <div class="message-content">${msg.content}</div>
-            <div class="message-info">
-              <span>${isSent ? 'You' : msg.sender.username}</span>
-              <span>${new Date(msg.createdAt).toLocaleTimeString()}</span>
-            </div>
-          </div>
-        `;
-        return messageEl;
-      }
-      
-      if (isDeleted) {
-        messageEl.className = 'deleted-message';
-        messageEl.innerHTML = `
-          <i class="fas fa-ban"></i> This message was deleted ${msg.deletedBy ? 'by admin' : ''}
-        `;
-        return messageEl;
-      }
-      
-      if (isAI) {
-        messageEl.className = 'message ai-message';
-        let content = `
-          <div class="message-content">
-            <strong>🤖 ${msg.sender.username}:</strong> ${msg.content}
-          </div>
-        `;
-        
-        // Add View Channel button for AI responses
-        if (whatsappLink) {
-          content += `
-            <a href="${whatsappLink}" target="_blank" class="ai-response-button">
-              <i class="fab fa-whatsapp"></i> View Channel
-            </a>
-          `;
-        }
-        
-        content += `
-          <div class="message-info">
-            <span>${new Date(msg.createdAt).toLocaleTimeString()}</span>
-          </div>
-        `;
-        
-        messageEl.innerHTML = content;
-        return messageEl;
-      }
-      
-      messageEl.className = `message ${isSent ? 'message-sent' : 'message-received'}`;
-      
-      let content = `
-        <div class="message-content">${msg.content}</div>
-      `;
-      
-      if (msg.replies && msg.replies.length > 0) {
-        content += `<div class="reply-indicator">
-          <i class="fas fa-reply"></i> ${msg.replies.length} ${msg.replies.length === 1 ? 'reply' : 'replies'}
-        </div>`;
-      }
-      
-      content += `
-        <div class="message-info">
-          <span>${isSent ? 'You' : msg.sender.username}</span>
-          <span>${new Date(msg.createdAt).toLocaleTimeString()}</span>
-        </div>
-      `;
-      
-      messageEl.innerHTML = content;
-      
-      if (!isSent) {
-        const messageActions = document.createElement('div');
-        messageActions.className = 'message-actions';
-        messageActions.innerHTML = `
-          <div class="action-icon" onclick="replyToMessage('${msg._id}', '${msg.sender.username}')">
-            <i class="fas fa-reply"></i>
-          </div>
-          <div class="action-icon" onclick="copyMessage('${msg.content}')">
-            <i class="fas fa-copy"></i>
-          </div>
-          ${isAdmin ? `
-            <div class="action-icon" onclick="deleteMessage('${msg._id}', true)">
-              <i class="fas fa-trash"></i>
-            </div>
-            <div class="action-icon" onclick="pinMessage('${msg._id}')">
-              <i class="fas fa-thumbtack"></i>
-            </div>
-          ` : ''}
-        `;
-        messageEl.appendChild(messageActions);
-      }
-      
-      return messageEl;
-    }
-    
-    // Render members
-    function renderMembers(members, onlineUsers) {
-      membersList.innerHTML = '';
-      let onlineCount = 0;
-      
-      members.forEach(member => {
-        const isOnline = onlineUsers.includes(member._id.toString());
-        if (isOnline) onlineCount++;
-        
-        const memberEl = document.createElement('div');
-        memberEl.className = 'member';
-        memberEl.onclick = () => showProfile(member._id);
-        memberEl.innerHTML = `
-          <div class="member-avatar">
-            ${member.username.charAt(0).toUpperCase()}
-            ${isOnline ? '<div class="member-online"></div>' : ''}
-          </div>
-          <div class="member-info">
-            <div class="member-name">
-              ${member.username}
-              ${member.isAdmin ? '<i class="fas fa-shield-alt admin-badge"></i>' : ''}
-            </div>
-            <div class="member-status">
-              ${isOnline ? 'Online' : 'Offline'}
-            </div>
-          </div>
-        `;
-        membersList.appendChild(memberEl);
-      });
-      
-      document.getElementById('onlineCount').textContent = onlineCount;
-    }
-    
-    // Scroll to bottom of messages
-    function scrollToBottom() {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-    
-    // Show user profile
-    function showProfile(userId) {
-      fetch(`/profile/${userId}`)
-        .then(response => response.text())
-        .then(html => {
-          profileBody.innerHTML = html;
-          profileModal.style.display = 'flex';
+
+        socket.on('message edited', (msg) => {
+            const messageEl = document.querySelector(`.message[data-id="${msg._id}"] .message-content`);
+            messageEl.innerHTML = msg.text + ' <span style="font-size: 0.8rem; color: var(--gray);">(edited)</span>';
         });
-    }
-    
-    // Close profile modal
-    closeProfile.onclick = () => {
-      profileModal.style.display = 'none';
-    };
-    
-    // AI Command Modal
-    aiButton.addEventListener('click', () => {
-      aiModal.style.display = 'flex';
-    });
-    
-    aiChatButton.addEventListener('click', () => {
-      aiModal.style.display = 'flex';
-    });
-    
-    closeAIModal.addEventListener('click', () => {
-      aiModal.style.display = 'none';
-    });
-    
-    // Send message
-    function sendMessage() {
-      const content = messageInput.value.trim();
-      if (content) {
-        if (content.startsWith('/')) {
-          const commandParts = content.split(' ');
-          const command = commandParts[0].substring(1);
-          const query = commandParts.slice(1).join(' ');
-          
-          socket.emit('ai-command', {
-            userId,
-            groupId,
-            command,
-            query
-          });
-        } else {
-          socket.emit('group-message', {
-            userId,
-            groupId,
-            content
-          });
-        }
-        messageInput.value = '';
-      }
-    }
-    
-    // Append message to chat
-    function appendMessage(message) {
-      const messageEl = createMessageElement(message, false);
-      messagesContainer.appendChild(messageEl);
-      scrollToBottom();
-    }
-    
-    // Show AI commands when @ is typed
-    messageInput.addEventListener('input', (e) => {
-      const content = e.target.value;
-      if (content.includes('@')) {
-        showAICommands();
-      } else {
-        aiCommands.style.display = 'none';
-      }
-    });
-    
-    function showAICommands() {
-      aiCommands.innerHTML = '';
-      aiCommands.style.display = 'block';
-      
-      const commands = [
-        { command: 'gpt', description: 'ChatGPT AI' },
-        { command: 'llama3', description: 'Llama 3 AI' },
-        { command: 'deepseek-v3', description: 'Deepseek V3 AI' },
-        { command: 'gemini', description: 'Gemini AI' },
-        { command: 'tiktokdlv1', description: 'Download TikTok video' },
-        { command: 'text2img', description: 'Generate image from text' },
-        { command: 'sd', description: 'Stable Diffusion image' }
-      ];
-      
-      commands.forEach(cmd => {
-        const item = document.createElement('div');
-        item.className = 'ai-command-item';
-        item.innerHTML = `
-          <strong>/${cmd.command}</strong> - ${cmd.description}
-        `;
-        item.addEventListener('click', () => {
-          messageInput.value = `/${cmd.command} `;
-          aiCommands.style.display = 'none';
-          messageInput.focus();
+
+        socket.on('message deleted', (data) => {
+            const messageEl = document.querySelector(`.message[data-id="${data.id}"] .message-content`);
+            messageEl.innerHTML = `<span class="deleted">${data.deletedByAdmin ? 'This message was deleted by admin' : 'This message was deleted'}</span>`;
+            messageEl.querySelector('.message-actions')?.remove();
         });
-        aiCommands.appendChild(item);
-      });
-    }
-    
-    // Socket event listeners
-    socket.on('new-group-message', (message) => {
-      appendMessage(message);
-    });
-    
-    socket.on('ai-response', (message) => {
-      appendMessage(message);
-    });
-    
-    socket.on('user-status', (data) => {
-      // Refresh members list
-      fetch(`/group-members/${groupId}`)
-        .then(response => response.json())
-        .then(members => {
-          renderMembers(members, Array.from(onlineUsers.keys()));
+
+        socket.on('message pinned', (msg) => {
+            const messageEl = document.querySelector(`.message[data-id="${msg._id}"]`);
+            messageEl.classList.toggle('pinned', msg.isPinned);
         });
-    });
-    
-    socket.on('typing', (data) => {
-      // Show typing indicator
-      const typingIndicator = document.createElement('div');
-      typingIndicator.className = 'typing-indicator';
-      typingIndicator.innerHTML = `
-        <span>${data.username} is typing</span>
-        <div class="typing-dots">
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-        </div>
-      `;
-      messagesContainer.appendChild(typingIndicator);
-      scrollToBottom();
-      
-      // Remove after 2 seconds
-      setTimeout(() => {
-        if (typingIndicator.parentNode) {
-          typingIndicator.parentNode.removeChild(typingIndicator);
+
+        socket.on('user typing', (data) => {
+            typingIndicator.textContent = `${data.username} is typing...`;
+            setTimeout(() => typingIndicator.textContent = '', 2000);
+        });
+
+        socket.on('user status', (data) => {
+            const memberEl = document.querySelector(`.member[href="/profile/${data.userId}"]`).parentElement;
+            memberEl.classList.toggle('online', data.isOnline);
+        });
+
+        socket.on('error', (msg) => alert(msg));
+
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        messageInput.addEventListener('input', () => {
+            socket.emit('typing');
+            if (messageInput.value.endsWith('@')) {
+                showCommandDropdown();
+            } else {
+                hideCommandDropdown();
+            }
+        });
+
+        document.getElementById('imageUpload').addEventListener('change', uploadImage);
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+            if (text.startsWith('/GTP')) {
+                socket.emit('ai command', { text });
+            } else {
+                socket.emit('chat message', { text, replyTo: replyToId });
+            }
+            messageInput.value = '';
+            replyToId = null;
+            hideCommandDropdown();
         }
-      }, 2000);
-    });
-    
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      // Render initial messages
-      renderMessages(<%- JSON.stringify(messages) %>);
-      
-      // Render members
-      renderMembers(<%- JSON.stringify(group.members) %>, <%- JSON.stringify(onlineUsers) %>);
-      
-      // Event listeners
-      sendButton.addEventListener('click', sendMessage);
-      messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          sendMessage();
+
+        function uploadImage() {
+            const file = document.getElementById('imageUpload').files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('image', file);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            }).then(res => res.json()).then(data => {
+                socket.emit('chat message', { text: messageInput.value, imageUrl: data.imageUrl, replyTo: replyToId });
+                messageInput.value = '';
+                replyToId = null;
+            });
         }
-      });
-      
-      messageInput.addEventListener('input', () => {
-        if (messageInput.value.trim()) {
-          socket.emit('typing', { groupId, userId, username: '<%= user.username %>' });
-        } else {
-          socket.emit('typing', { groupId, userId, isTyping: false });
+
+        function addMessage(msg) {
+            const div = document.createElement('div');
+            div.className = `message ${msg.sender._id === '<%= user._id %>' ? 'own' : ''} ${msg.isPinned ? 'pinned' : ''}`;
+            div.dataset.id = msg._id;
+            div.innerHTML = `
+                <div class="message-header">
+                    <img src="${msg.sender.profilePicture}" class="sender-pic" alt="${msg.sender.username}">
+                    <span class="sender-name">${msg.sender.username} ${msg.sender.isAdmin ? '<i class="fas fa-check-circle verified"></i>' : ''}</span>
+                    <span class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</span>
+                </div>
+                <div class="message-content ${msg.isAI ? 'ai-response' : ''}">
+                    ${msg.replyTo ? `<div class="reply">${msg.replyTo.text.substring(0, 50)}...</div>` : ''}
+                    ${msg.isDeleted ? `<span class="deleted">${msg.deletedByAdmin ? 'This message was deleted by admin' : 'This message was deleted'}</span>` : 
+                        `${msg.text}${msg.imageUrl ? `<img src="${msg.imageUrl}" alt="Uploaded Image" style="max-width: 100%; border-radius: 8px; margin-top: 0.5rem;">` : ''}${msg.isEdited ? ' <span style="font-size: 0.8rem; color: var(--gray);">(edited)</span>' : ''}`}
+                    ${!msg.isDeleted && (msg.sender._id === '<%= user._id %>' || <%= user.isAdmin %>) ? `
+                        <div class="message-actions">
+                            ${msg.sender._id === '<%= user._id %>' ? `
+                                <button onclick="copyMessage('${msg._id}')" class="action-btn"><i class="fas fa-copy"></i></button>
+                                <button onclick="editMessage('${msg._id}')" class="action-btn"><i class="fas fa-edit"></i></button>
+                            ` : ''}
+                            <button onclick="deleteMessage('${msg._id}')" class="action-btn"><i class="fas fa-trash"></i></button>
+                            ${<%= user.isAdmin %> ? `<button onclick="pinMessage('${msg._id}')" class="action-btn"><i class="fas fa-thumbtack"></i></button>` : ''}
+                            <button onclick="replyToMessage('${msg._id}')" class="action-btn"><i class="fas fa-reply"></i></button>
+                        </div>` : ''}
+                </div>`;
+            messagesDiv.appendChild(div);
         }
-      });
-    });
-    
-    // Helper functions
-    function replyToMessage(messageId, username) {
-      messageInput.value = `@${username} `;
-      messageInput.focus();
-    }
-    
-    function copyMessage(content) {
-      navigator.clipboard.writeText(content);
-      alert('Message copied to clipboard');
-    }
-    
-    function deleteMessage(messageId, isAdmin) {
-      if (confirm('Are you sure you want to delete this message?')) {
-        socket.emit('delete-message', { messageId, userId, isAdmin });
-      }
-    }
-    
-    function pinMessage(messageId) {
-      socket.emit('pin-message', { messageId, userId });
-    }
-  </script>
+
+        function copyMessage(id) {
+            const text = document.querySelector(`.message[data-id="${id}"] .message-content`).textContent;
+            navigator.clipboard.writeText(text);
+        }
+
+        function editMessage(id) {
+            const text = prompt('Edit message:', document.querySelector(`.message[data-id="${id}"] .message-content`).textContent);
+            if (text) socket.emit('edit message', { id, text });
+        }
+
+        function deleteMessage(id) {
+            if (confirm('Are you sure you want to delete this message?')) {
+                socket.emit('delete message', { id });
+            }
+        }
+
+        function pinMessage(id) {
+            socket.emit('pin message', { id });
+        }
+
+        function replyToMessage(id) {
+            replyToId = id;
+            messageInput.focus();
+        }
+
+        function toggleGroupInfo() {
+            const groupInfo = document.getElementById('groupInfo');
+            groupInfo.style.display = groupInfo.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function copyGroupLink() {
+            navigator.clipboard.writeText(document.getElementById('groupLink').textContent);
+            alert('Group link copied!');
+        }
+
+        function startPrivateChat(userId) {
+            window.location.href = `/private-chat/${userId}`;
+        }
+
+        function showCommandDropdown() {
+            commandDropdown.innerHTML = `
+                <button class="command-btn" onclick="selectCommand('/GTP chatgpt')">ChatGPT</button>
+                <button class="command-btn" onclick="selectCommand('/GTP llama')">Llama</button>
+                <button class="command-btn" onclick="selectCommand('/GTP deepseek-v3')">Deepseek-v3</button>
+                <button class="command-btn" onclick="selectCommand('/GTP deepseek-r1')">Deepseek-r1</button>
+                <button class="command-btn" onclick="selectCommand('/GTP meta-ai')">Meta-AI</button>
+                <button class="command-btn" onclick="selectCommand('/GTP gpt4')">GPT-4</button>
+                <button class="command-btn" onclick="selectCommand('/GTP claude')">Claude Sonnet</button>
+                <button class="command-btn" onclick="selectCommand('/GTP uncensored')">Uncensored AI</button>
+                <button class="command-btn" onclick="selectCommand('/GTP pixtral')">Pixtral</button>
+                <button class="command-btn" onclick="selectCommand('/GTP gemma')">Gemma</button>
+                <button class="command-btn" onclick="selectCommand('/GTP qvq')">QVQ 72B</button>
+                <button class="command-btn" onclick="selectCommand('/GTP qwen2')">Qwen2</button>
+                <button class="command-btn" onclick="selectCommand('/GTP gemini')">Gemini</button>
+                <button class="command-btn" onclick="selectCommand('/GTP gemini-pro')">Gemini Pro</button>
+                <button class="command-btn" onclick="selectCommand('/GTP gpt-turbo')">GPT Turbo</button>
+                <button class="command-btn" onclick="selectCommand('/GTP letme')">Letme GPT</button>
+                <button class="command-btn" onclick="selectCommand('/GTP simsimi')">Simsimi</button>
+                <button class="command-btn" onclick="selectCommand('/GTP lumin')">Lumin AI</button>
+                <button class="command-btn" onclick="selectCommand('/GTP wwd')">WWD GPT</button>
+            `;
+            commandDropdown.style.display = 'block';
+        }
+
+        function hideCommandDropdown() {
+            commandDropdown.style.display = 'none';
+        }
+
+        function selectCommand(command) {
+            messageInput.value = command + ' ';
+            hideCommandDropdown();
+            messageInput.focus();
+        }
+
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    </script>
 </body>
 </html>
