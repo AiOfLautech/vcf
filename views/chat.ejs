@@ -248,6 +248,14 @@
       border-bottom-left-radius: 0;
     }
 
+    .ai-message {
+      align-self: flex-start;
+      background: #dbeafe;
+      color: var(--dark);
+      border-bottom-left-radius: 0;
+      border-left: 3px solid var(--primary);
+    }
+
     .message-info {
       display: flex;
       justify-content: space-between;
@@ -344,6 +352,7 @@
       border-top: 1px solid #e2e8f0;
       display: flex;
       gap: 0.8rem;
+      position: relative;
     }
 
     .message-input {
@@ -396,6 +405,73 @@
 
     .close-reply {
       cursor: pointer;
+    }
+
+    /* AI Command Modal */
+    .ai-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      display: none;
+    }
+
+    .ai-modal-content {
+      background: white;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+      overflow: hidden;
+    }
+
+    .ai-modal-header {
+      padding: 1.5rem;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .ai-modal-body {
+      padding: 1.5rem;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .command-list {
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      background: #1a1f2d;
+      color: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      line-height: 1.6;
+    }
+
+    .command-header {
+      color: #00C1FF;
+      margin-bottom: 1rem;
+    }
+
+    .command-category {
+      margin: 1.5rem 0;
+    }
+
+    .category-header {
+      color: #f59e0b;
+      margin-bottom: 0.5rem;
+    }
+
+    .command-item {
+      margin-left: 1rem;
+      color: #49cc90;
     }
 
     /* Profile Modal */
@@ -519,6 +595,50 @@
       color: var(--dark);
     }
 
+    /* AI Command List */
+    .ai-commands {
+      position: absolute;
+      bottom: 70px;
+      left: 1rem;
+      right: 1rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: var(--card-shadow);
+      padding: 1rem;
+      display: none;
+      z-index: 100;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .ai-command-item {
+      padding: 0.8rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .ai-command-item:hover {
+      background: #f1f5f9;
+    }
+
+    /* AI Response Button */
+    .ai-response-button {
+      display: inline-block;
+      margin-top: 0.8rem;
+      padding: 0.5rem 1rem;
+      background: #10b981;
+      color: white;
+      border-radius: 20px;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .ai-response-button:hover {
+      background: #0da271;
+    }
+
     @media (max-width: 768px) {
       .chat-container {
         flex-direction: column;
@@ -564,7 +684,7 @@
     <div class="chat-area">
       <div class="chat-header">
         <div class="chat-title">Community Chat</div>
-        <button class="ai-btn">
+        <button class="ai-btn" id="aiChatButton">
           <i class="fas fa-robot"></i> AI Assistant
         </button>
       </div>
@@ -581,6 +701,96 @@
         </div>
         <div class="send-btn" id="sendButton">
           <i class="fas fa-paper-plane"></i>
+        </div>
+        
+        <!-- AI Command List -->
+        <div class="ai-commands" id="aiCommands">
+          <!-- AI commands will be populated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- AI Command Modal -->
+  <div class="ai-modal" id="aiModal">
+    <div class="ai-modal-content">
+      <div class="ai-modal-header">
+        <h3>AI Commands</h3>
+        <i class="fas fa-times" id="closeAIModal"></i>
+      </div>
+      <div class="ai-modal-body">
+        <div class="command-list">
+          <div class="command-header">╭══〘〘 𝙶𝙾𝙳/𝚂 𝚉𝙴𝙰𝙻 〙〙═⊷</div>
+          <div class="command-item">┃❍ Pʀᴇғɪx:   /</div>
+          <div class="command-item">┃❍ ᴏᴡɴᴇʀ:  @𝙰i𝙾f𝙻autech</div>
+          <div class="command-item">┃❍ Pʟᴜɢɪɴs:  𝟐𝟓</div>
+          <div class="command-item">┃❍ Vᴇʀsɪᴏɴ:  𝟐.𝟎.𝟎</div>
+          <div class="command-item">┃❍ Uᴘᴛɪᴍᴇ:  𝟏𝟒d 𝟐𝟏h 𝟐𝟎m 𝟑𝟗s</div>
+          <div class="command-item">┃❍ Tɪᴍᴇ Nᴏᴡ:  𝟎𝟑:𝟎𝟎:𝟓𝟗 pm</div>
+          <div class="command-item">┃❍ Dᴀᴛᴇ Tᴏᴅᴀʏ:  𝟎𝟕/𝟎𝟕/𝟐𝟎𝟐𝟓</div>
+          <div class="command-item">┃❍ Tɪᴍᴇ Zᴏɴᴇ:  𝙰frica/𝙻agos</div>
+          <div class="command-item">┃❍ Sᴇʀᴠᴇʀ Rᴀᴍ:  𝟕𝟒.𝟖𝟏 𝙶𝙱/𝟏𝟐𝟓.𝟕𝟕 𝙶𝙱</div>
+          <div class="command-item">╰═════════════════⊷</div>
+          
+          <div class="command-category">
+            <div class="category-header">╭─── 『 𝙰𝙸 』</div>
+            <div class="command-item">✧ /flux</div>
+            <div class="command-item">✧ /gemini</div>
+            <div class="command-item">✧ /gpt</div>
+            <div class="command-item">✧ /luminai</div>
+            <div class="command-item">✧ /sd</div>
+            <div class="command-item">╰─────────────────◊</div>
+          </div>
+          
+          <div class="command-category">
+            <div class="category-header">╭─── 『 𝙰𝙽𝙸𝙼𝙴 』</div>
+            <div class="command-item">✧ /konachan</div>
+            <div class="command-item">✧ /neko</div>
+            <div class="command-item">✧ /waifu</div>
+            <div class="command-item">╰─────────────────◊</div>
+          </div>
+          
+          <div class="command-category">
+            <div class="category-header">╭─── 『 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳𝙴𝚁 』</div>
+            <div class="command-item">✧ /apk</div>
+            <div class="command-item">✧ /gitclone</div>
+            <div class="command-item">✧ /play</div>
+            <div class="command-item">✧ /video</div>
+            <div class="command-item">✧ /ytmp3</div>
+            <div class="command-item">✧ /ytmp4</div>
+            <div class="command-item">╰─────────────────◊</div>
+          </div>
+          
+          <div class="command-category">
+            <div class="category-header">╭─── 『 𝙶𝙴𝙽𝙴𝚁𝙰𝙻 』</div>
+            <div class="command-item">✧ /help</div>
+            <div class="command-item">✧ /menu</div>
+            <div class="command-item">✧ /ping</div>
+            <div class="command-item">✧ /repo</div>
+            <div class="command-item">✧ /system</div>
+            <div class="command-item">✧ /uptime</div>
+            <div class="command-item">╰─────────────────◊</div>
+          </div>
+          
+          <div class="command-category">
+            <div class="category-header">╭─── 『 𝙽𝚂𝙵𝚆 』</div>
+            <div class="command-item">✧ /hneko</div>
+            <div class="command-item">✧ /hwaifu</div>
+            <div class="command-item">╰─────────────────◊</div>
+          </div>
+          
+          <div class="command-category">
+            <div class="category-header">╭─── 『 𝚂𝙴𝙰𝚁𝙲𝙷 』</div>
+            <div class="command-item">✧ /wikipedia</div>
+            <div class="command-item">╰─────────────────◊</div>
+          </div>
+          
+          <div class="command-category">
+            <div class="category-header">╭─── 『 𝚃𝙾𝙾𝙻𝚂 』</div>
+            <div class="command-item">✧ /createqr</div>
+            <div class="command-item">✧ /pastebin</div>
+            <div class="command-item">╰─────────────────◊</div>
+          </div>
         </div>
       </div>
     </div>
@@ -605,6 +815,7 @@
     const userId = '<%= user._id %>';
     const isAdmin = <%= user.isAdmin %>;
     const groupId = '<%= group._id %>';
+    const whatsappLink = '<%= whatsappLink %>';
     
     // Join chat on page load
     socket.emit('join', { userId });
@@ -615,9 +826,14 @@
     const sendButton = document.getElementById('sendButton');
     const membersList = document.getElementById('membersList');
     const onlineCount = document.getElementById('onlineCount');
+    const aiModal = document.getElementById('aiModal');
+    const aiButton = document.getElementById('aiButton');
+    const aiChatButton = document.getElementById('aiChatButton');
+    const closeAIModal = document.getElementById('closeAIModal');
     const profileModal = document.getElementById('profileModal');
     const profileBody = document.getElementById('profileBody');
     const closeProfile = document.getElementById('closeProfile');
+    const aiCommands = document.getElementById('aiCommands');
     
     // Render messages
     function renderMessages(messages) {
@@ -649,6 +865,7 @@
       const isSent = msg.sender._id.toString() === userId;
       const isDeleted = msg.isDeleted;
       const isPinnedMsg = msg.pinned;
+      const isAI = msg.sender._id.toString() === 'ai';
       
       const messageEl = document.createElement('div');
       
@@ -674,6 +891,33 @@
         messageEl.innerHTML = `
           <i class="fas fa-ban"></i> This message was deleted ${msg.deletedBy ? 'by admin' : ''}
         `;
+        return messageEl;
+      }
+      
+      if (isAI) {
+        messageEl.className = 'message ai-message';
+        let content = `
+          <div class="message-content">
+            <strong>🤖 ${msg.sender.username}:</strong> ${msg.content}
+          </div>
+        `;
+        
+        // Add View Channel button for AI responses
+        if (whatsappLink) {
+          content += `
+            <a href="${whatsappLink}" target="_blank" class="ai-response-button">
+              <i class="fab fa-whatsapp"></i> View Channel
+            </a>
+          `;
+        }
+        
+        content += `
+          <div class="message-info">
+            <span>${new Date(msg.createdAt).toLocaleTimeString()}</span>
+          </div>
+        `;
+        
+        messageEl.innerHTML = content;
         return messageEl;
       }
       
@@ -776,25 +1020,98 @@
       profileModal.style.display = 'none';
     };
     
+    // AI Command Modal
+    aiButton.addEventListener('click', () => {
+      aiModal.style.display = 'flex';
+    });
+    
+    aiChatButton.addEventListener('click', () => {
+      aiModal.style.display = 'flex';
+    });
+    
+    closeAIModal.addEventListener('click', () => {
+      aiModal.style.display = 'none';
+    });
+    
     // Send message
     function sendMessage() {
       const content = messageInput.value.trim();
       if (content) {
-        socket.emit('group-message', {
-          userId,
-          groupId,
-          content
-        });
+        if (content.startsWith('/')) {
+          const commandParts = content.split(' ');
+          const command = commandParts[0].substring(1);
+          const query = commandParts.slice(1).join(' ');
+          
+          socket.emit('ai-command', {
+            userId,
+            groupId,
+            command,
+            query
+          });
+        } else {
+          socket.emit('group-message', {
+            userId,
+            groupId,
+            content
+          });
+        }
         messageInput.value = '';
       }
     }
     
-    // Socket event listeners
-    socket.on('new-group-message', (message) => {
-      const messagesContainer = document.getElementById('messagesContainer');
+    // Append message to chat
+    function appendMessage(message) {
       const messageEl = createMessageElement(message, false);
       messagesContainer.appendChild(messageEl);
       scrollToBottom();
+    }
+    
+    // Show AI commands when @ is typed
+    messageInput.addEventListener('input', (e) => {
+      const content = e.target.value;
+      if (content.includes('@')) {
+        showAICommands();
+      } else {
+        aiCommands.style.display = 'none';
+      }
+    });
+    
+    function showAICommands() {
+      aiCommands.innerHTML = '';
+      aiCommands.style.display = 'block';
+      
+      const commands = [
+        { command: 'gpt', description: 'ChatGPT AI' },
+        { command: 'llama3', description: 'Llama 3 AI' },
+        { command: 'deepseek-v3', description: 'Deepseek V3 AI' },
+        { command: 'gemini', description: 'Gemini AI' },
+        { command: 'tiktokdlv1', description: 'Download TikTok video' },
+        { command: 'text2img', description: 'Generate image from text' },
+        { command: 'sd', description: 'Stable Diffusion image' }
+      ];
+      
+      commands.forEach(cmd => {
+        const item = document.createElement('div');
+        item.className = 'ai-command-item';
+        item.innerHTML = `
+          <strong>/${cmd.command}</strong> - ${cmd.description}
+        `;
+        item.addEventListener('click', () => {
+          messageInput.value = `/${cmd.command} `;
+          aiCommands.style.display = 'none';
+          messageInput.focus();
+        });
+        aiCommands.appendChild(item);
+      });
+    }
+    
+    // Socket event listeners
+    socket.on('new-group-message', (message) => {
+      appendMessage(message);
+    });
+    
+    socket.on('ai-response', (message) => {
+      appendMessage(message);
     });
     
     socket.on('user-status', (data) => {
@@ -808,18 +1125,25 @@
     
     socket.on('typing', (data) => {
       // Show typing indicator
-      // (Implementation omitted for brevity)
-    });
-    
-    socket.on('message-deleted', (data) => {
-      const messageEl = document.querySelector(`[data-id="${data.messageId}"]`);
-      if (messageEl) {
-        messageEl.innerHTML = `
-          <div class="deleted-message">
-            <i class="fas fa-ban"></i> This message was deleted ${data.deletedBy === 'admin' ? 'by admin' : ''}
-          </div>
-        `;
-      }
+      const typingIndicator = document.createElement('div');
+      typingIndicator.className = 'typing-indicator';
+      typingIndicator.innerHTML = `
+        <span>${data.username} is typing</span>
+        <div class="typing-dots">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      `;
+      messagesContainer.appendChild(typingIndicator);
+      scrollToBottom();
+      
+      // Remove after 2 seconds
+      setTimeout(() => {
+        if (typingIndicator.parentNode) {
+          typingIndicator.parentNode.removeChild(typingIndicator);
+        }
+      }, 2000);
     });
     
     // Initialize
@@ -840,10 +1164,11 @@
       });
       
       messageInput.addEventListener('input', () => {
-        socket.emit('typing', { groupId, userId, isTyping: true });
-        setTimeout(() => {
+        if (messageInput.value.trim()) {
+          socket.emit('typing', { groupId, userId, username: '<%= user.username %>' });
+        } else {
           socket.emit('typing', { groupId, userId, isTyping: false });
-        }, 2000);
+        }
       });
     });
     
@@ -865,8 +1190,7 @@
     }
     
     function pinMessage(messageId) {
-      // Implementation would update message in DB and notify clients
-      alert('Message pinned');
+      socket.emit('pin-message', { messageId, userId });
     }
   </script>
 </body>
