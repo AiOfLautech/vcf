@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Chat | Contact Gain</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+            --card-bg: #ffffff;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            background-color: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+        }
+        .chat-container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 300px;
+            background: var(--dark);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .members-list {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .member {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .member:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .member-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .member-name {
+            flex-grow: 1;
+            color: white;
+        }
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #10b981;
+            display: none;
+        }
+        .online .online-dot {
+            display: block;
+        }
+        .verified {
+            color: #10b981;
+        }
+        .chat-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            box-shadow: var(--card-shadow);
+        }
+        .chat-header {
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .messages {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        .message {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 1rem;
+            max-width: 70%;
+        }
+        .message.own {
+            align-self: flex-end;
+        }
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+        .sender-pic {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .sender-name {
+            font-weight: 600;
+            color: var(--dark);
+        }
+        .timestamp {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+        .message-content {
+            padding: 0.8rem;
+            border-radius: 8px;
+            background: #f1f5f9;
+        }
+        .message.own .message-content {
+            background: var(--primary-light);
+            color: white;
+        }
+        .input-area {
+            display: flex;
+            padding: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        .message-input {
+            flex-grow: 1;
+            padding: 0.8rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            resize: none;
+            margin-right: 0.5rem;
+        }
+        .send-btn, .upload-btn {
+            padding: 0.8rem;
+            background: var(--primary);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+        }
+        .send-btn:hover, .upload-btn:hover {
+            background: var(--primary-light);
+        }
+        @media (max-width: 768px) {
+            .chat-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+            .messages {
+                max-height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="sidebar">
+            <div class="members-list">
+                <% users.forEach(member => { %>
+                    <div class="member <%= member.isOnline ? 'online' : '' %>">
+                        <a href="/profile/<%= member._id %>"><img src="<%= member.profilePicture %>" class="member-pic" alt="<%= member.username %>"></a>
+                        <a href="/profile/<%= member._id %>" class="member-name"><%= member.username %> <%= member.isAdmin ? '<i class="fas fa-check-circle verified"></i>' : '' %></a>
+                        <span class="online-dot"></span>
+                        <button onclick="startPrivateChat('<%= member._id %>')" class="action-btn"><i class="fas fa-envelope"></i></button>
+                    </div>
+                <% }); %>
+            </div>
+            <a href="/chat" style="color: var(--primary-light); text-align: center; margin-top: 1rem; text-decoration: none;"><i class="fas fa-arrow-left"></i> Back to Community Chat</a>
+        </div>
+        <div class="chat-area">
+            <div class="chat-header">
+                <img src="<%= receiver.profilePicture %>" class="sender-pic" alt="<%= receiver.username %>">
+                <span class="sender-name"><%= receiver.username %> <%= receiver.isAdmin ? '<i class="fas fa-check-circle verified"></i>' : '' %></span>
+            </div>
+            <div class="messages" id="messages">
+                <% messages.forEach(msg => { %>
+                    <div class="message <%= msg.sender._id.toString() === user._id.toString() ? 'own' : '' %>" data-id="<%= msg._id %>">
+                        <div class="message-header">
+                            <img src="<%= msg.sender.profilePicture %>" class="sender-pic" alt="<%= msg.sender.username %>">
+                            <span class="sender-name"><%= msg.sender.username %></span>
+                            <span class="timestamp"><%= new Date(msg.timestamp).toLocaleTimeString() %></span>
+                        </div>
+                        <div class="message-content">
+                            <%= msg.text %>
+                            <% if (msg.imageUrl) { %>
+                                <img src="<%= msg.imageUrl %>" alt="Uploaded Image" style="max-width: 100%; border-radius: 8px; margin-top: 0.5rem;">
+                            <% } %>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+            <div class="input-area">
+                <textarea id="messageInput" class="message-input" placeholder="Type a message..." rows="1"></textarea>
+                <input type="file" id="imageUpload" style="display: none;" accept="image/*">
+                <button class="upload-btn" onclick="document.getElementById('imageUpload').click()"><i class="fas fa-image"></i></button>
+                <button id="sendBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const socket = io();
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        socket.on('private message', (msg) => {
+            if ((msg.sender._id === '<%= user._id %>' && msg.receiver._id === '<%= receiver._id %>') || 
+                (msg.sender._id === '<%= receiver._id %>' && msg.receiver._id === '<%= user._id %>')) {
+                addMessage(msg);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+        });
+
+        socket.on('user status', (data) => {
+            const memberEl = document.querySelector(`.member[href="/profile/${data.userId}"]`).parentElement;
+            memberEl.classList.toggle('online', data.isOnline);
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        document.getElementById('imageUpload').addEventListener('change', uploadImage);
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+            socket.emit('private message', { text, receiver: '<%= receiver._id %>' });
+            messageInput.value = '';
+        }
+
+        function uploadImage() {
+            const file = document.getElementById('imageUpload').files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('image', file);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            }).then(res => res.json()).then(data => {
+                socket.emit('private message', { text: messageInput.value, imageUrl: data.imageUrl, receiver: '<%= receiver._id %>' });
+                messageInput.value = '';
+            });
+        }
+
+        function addMessage(msg) {
+            const div = document.createElement('div');
+            div.className = `message ${msg.sender._id === '<%= user._id %>' ? 'own' : ''}`;
+            div.dataset.id = msg._id;
+            div.innerHTML = `
+                <div class="message-header">
+                    <img src="${msg.sender.profilePicture}" class="sender-pic" alt="${msg.sender.username}">
+                    <span class="sender-name">${msg.sender.username}</span>
+                    <span class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</span>
+                </div>
+                <div class="message-content">
+                    ${msg.text}
+                    ${msg.imageUrl ? `<img src="${msg.imageUrl}" alt="Uploaded Image" style="max-width: 100%; border-radius: 8px; margin-top: 0.5rem;">` : ''}
+                </div>`;
+            messagesDiv.appendChild(div);
+        }
+
+        function startPrivateChat(userId) {
+            window.location.href = `/private-chat/${userId}`;
+        }
+
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    </script>
+</body>
+</html>
