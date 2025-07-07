@@ -1,209 +1,142 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat | Contact Gain</title>
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f0f2f5;
-            display: flex;
-            height: 100vh;
-        }
-        .container {
-            display: flex;
-            width: 100%;
-            height: 100%;
-        }
-        .sidebar {
-            width: 300px;
-            background-color: #ffffff;
-            border-right: 1px solid #ddd;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        .chat-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background-color: #fff;
-        }
-        .messages {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        .message {
-            margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            max-width: 60%;
-        }
-        .message.sent {
-            background-color: #dcf8c6;
-            align-self: flex-end;
-            margin-left: auto;
-        }
-        .message.received {
-            background-color: #e9ecef;
-        }
-        .input-area {
-            padding: 20px;
-            border-top: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-        }
-        .input-area input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-            margin-right: 10px;
-        }
-        .input-area button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-        }
-        .input-area button:hover {
-            background-color: #0056b3;
-        }
-        .member {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .member.online .online-dot {
-            width: 10px;
-            height: 10px;
-            background-color: #28a745;
-            border-radius: 50%;
-            margin-left: 10px;
-        }
-        .member-pic {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-        .member-name {
-            flex: 1;
-            text-decoration: none;
-            color: #333;
-        }
-        .action-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #007bff;
-        }
-        .group-info {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="sidebar">
-            <div class="group-info">
-                <h2><%= group.name %></h2>
-                <p><strong>Description:</strong> <%= group.description %></p>
-                <p><strong>Members:</strong> <%= group.members.length %></p>
-                <p><strong>Link:</strong> <span id="groupLink"><%= groupLink %></span></p>
-                <button onclick="copyGroupLink()" class="action-btn"><i class="fas fa-copy"></i> Copy Link</button>
-            </div>
-            <div class="members-list">
-                <% members.forEach(member => { %>
-                    <div class="member <%= member.isOnline ? 'online' : '' %>">
-                        <a href="/profile/<%= member._id %>"><img src="<%= member.profilePicture %>" class="member-pic" alt="<%= member.username %>"></a>
-                        <a href="/profile/<%= member._id %>" class="member-name"><%= member.username %> <%= member.isAdmin ? '<i class="fas fa-check-circle verified"></i>' : '' %></a>
-                        <span class="online-dot"></span>
-                        <button onclick="startPrivateChat('<%= member._id %>')" class="action-btn"><i class="fas fa-envelope"></i></button>
-                    </div>
-                <% }); %>
-            </div>
-        </div>
-        <div class="chat-area">
-            <div class="messages">
-                <% messages.forEach(message => { %>
-                    <div class="message <%= message.sender._id.toString() === user._id.toString() ? 'sent' : 'received' %>">
-                        <strong><%= message.sender.username %></strong>
-                        <% if (message.replyTo) { %>
-                            <blockquote>Replying to: <%= message.replyTo.content %></blockquote>
-                        <% } %>
-                        <p><%= message.content %></p>
-                        <small><%= message.timestamp.toLocaleString() %></small>
-                    </div>
-                <% }); %>
-            </div>
-            <div class="input-area">
-                <input type="text" id="messageInput" placeholder="Type a message...">
-                <button onclick="sendMessage()">Send</button>
-            </div>
-        </div>
-    </div>
+const express = require('express');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const mongoose = require('mongoose');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const bcrypt = require('bcryptjs');
+const http = require('http');
+const socketIo = require('socket.io');
+const sharedsession = require('express-socket.io-session');
+const { body, validationResult } = require('express-validator');
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        const userId = '<%= user._id %>';
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
 
-        socket.on('chatMessage', (message) => {
-            const messagesDiv = document.querySelector('.messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message', message.sender._id === userId ? 'sent' : 'received');
-            messageDiv.innerHTML = `
-                <strong>${message.sender.username}</strong>
-                ${message.replyTo ? `<blockquote>Replying to: ${message.replyTo.content}</blockquote>` : ''}
-                <p>${message.content}</p>
-                <small>${new Date(message.timestamp).toLocaleString()}</small>
-            `;
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        });
+// MongoDB Models (assuming these are defined elsewhere)
+const User = require('./models/User');
+const Message = require('./models/Message');
+const PrivateMessage = require('./models/PrivateMessage');
+const Group = require('./models/Group');
 
-        socket.on('userStatus', (data) => {
-            const memberDiv = document.querySelector(`.member a[href="/profile/${data.userId}"]`)?.parentElement;
-            if (memberDiv) {
-                memberDiv.classList.toggle('online', data.isOnline);
-            }
-        });
+// Middleware
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.set('view engine', 'ejs');
 
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const content = input.value.trim();
-            if (content) {
-                socket.emit('chatMessage', { content });
-                input.value = '';
-            }
-        }
+const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/contactgain' })
+});
 
-        function startPrivateChat(userId) {
-            window.location.href = `/private-chat/${userId}`;
-        }
+app.use(sessionMiddleware);
+app.use(passport.initialize());
+app.use(passport.session());
 
-        function copyGroupLink() {
-            const link = document.getElementById('groupLink').textContent;
-            navigator.clipboard.writeText(link).then(() => {
-                alert('Link copied to clipboard!');
-            });
-        }
+// Passport Configuration
+passport.use(new LocalStrategy(async (username, password, done) => {
+  try {
+    const user = await User.findOne({ username });
+    if (!user) return done(null, false, { message: 'Incorrect username.' });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return done(null, false, { message: 'Incorrect password.' });
+    return done(null, user);
+  } catch (err) {
+    return done(err);
+  }
+}));
 
-        document.getElementById('messageInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
-    </script>
-</body>
-</html>
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err);
+  }
+});
+
+// Authentication Middleware
+function isAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) return next();
+  res.redirect('/login');
+}
+
+// Routes
+app.get('/chat', isAuthenticated, async (req, res) => {
+  try {
+    let group = await Group.findOne().populate('members admins');
+    if (!group) {
+      group = new Group({
+        name: 'Community Chat',
+        description: 'Welcome to the Contact Gain community!',
+        members: [req.user._id],
+        admins: []
+      });
+      await group.save();
+    } else if (!group.members.some(m => m._id.toString() === req.user._id.toString())) {
+      group.members.push(req.user._id);
+      await group.save();
+      group = await Group.findById(group._id).populate('members admins');
+    }
+    const messages = await Message.find().populate('sender replyTo').sort({ timestamp: 1 });
+    const groupLink = `${req.protocol}://${req.get('host')}/chat`;
+    res.render('chat', {
+      user: req.user,
+      messages,
+      group,
+      members: group.members,
+      groupLink
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Socket.io Configuration
+io.use(sharedsession(sessionMiddleware, { autoSave: true }));
+
+io.on('connection', async (socket) => {
+  const user = socket.handshake.session.passport?.user ? await User.findById(socket.handshake.session.passport.user) : null;
+  if (!user) return socket.disconnect();
+
+  user.isOnline = true;
+  await user.save();
+  io.emit('userStatus', { userId: user._id, isOnline: true });
+
+  let group = await Group.findOne();
+  if (!group) {
+    group = new Group({ members: [user._id] });
+    await group.save();
+  } else if (!group.members.includes(user._id)) {
+    group.members.push(user._id);
+    await group.save();
+  }
+
+  socket.on('chatMessage', async (data) => {
+    const message = new Message({
+      sender: user._id,
+      content: data.content,
+      replyTo: data.replyTo || null
+    });
+    await message.save();
+    const populatedMessage = await Message.findById(message._id).populate('sender replyTo');
+    io.emit('chatMessage', populatedMessage);
+  });
+
+  socket.on('disconnect', async () => {
+    user.isOnline = false;
+    await user.save();
+    io.emit('userStatus', { userId: user._id, isOnline: false });
+  });
+});
+
+// Start Server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
