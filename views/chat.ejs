@@ -3,293 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Community Chat | Contact Gain</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <title>Chat | Contact Gain</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        :root {
-            --primary: #6366f1;
-            --primary-light: #818cf8;
-            --dark: #1e293b;
-            --light: #f8fafc;
-            --gray: #94a3b8;
-            --card-bg: #ffffff;
-            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        * {
+        body {
+            font-family: 'Arial', sans-serif;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
-        body {
-            background-color: #f1f5f9;
-            min-height: 100vh;
+            background-color: #f0f2f5;
             display: flex;
+            height: 100vh;
         }
-        .chat-container {
+        .container {
             display: flex;
             width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            height: 100vh;
+            height: 100%;
         }
         .sidebar {
             width: 300px;
-            background: var(--dark);
-            color: white;
-            padding: 1rem;
+            background-color: #ffffff;
+            border-right: 1px solid #ddd;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .chat-area {
+            flex: 1;
             display: flex;
             flex-direction: column;
+            background-color: #fff;
         }
-        .group-header {
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 60%;
+        }
+        .message.sent {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .message.received {
+            background-color: #e9ecef;
+        }
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #ddd;
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            margin-bottom: 1rem;
+        }
+        .input-area input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            margin-right: 10px;
+        }
+        .input-area button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
             cursor: pointer;
         }
-        .group-pic {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        .group-info {
-            flex-grow: 1;
-        }
-        .group-name {
-            font-weight: 600;
-        }
-        .online-count {
-            font-size: 0.85rem;
-            color: var(--gray);
-        }
-        .members-list {
-            flex-grow: 1;
-            overflow-y: auto;
+        .input-area button:hover {
+            background-color: #0056b3;
         }
         .member {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            transition: all 0.3s ease;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
         }
-        .member:hover {
-            background: rgba(255, 255, 255, 0.1);
+        .member.online .online-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #28a745;
+            border-radius: 50%;
+            margin-left: 10px;
         }
         .member-pic {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            object-fit: cover;
+            margin-right: 10px;
         }
         .member-name {
-            flex-grow: 1;
-            color: white;
-        }
-        .online-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #10b981;
-            display: none;
-        }
-        .online .online-dot {
-            display: block;
-        }
-        .verified {
-            color: #10b981;
-        }
-        .chat-area {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            background: var(--card-bg);
-            box-shadow: var(--card-shadow);
-        }
-        .messages {
-            flex-grow: 1;
-            padding: 1rem;
-            overflow-y: auto;
-        }
-        .message {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 1rem;
-            max-width: 70%;
-        }
-        .message.own {
-            align-self: flex-end;
-        }
-        .message-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.3rem;
-        }
-        .sender-pic {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        .sender-name {
-            font-weight: 600;
-            color: var(--dark);
-        }
-        .timestamp {
-            font-size: 0.8rem;
-            color: var(--gray);
-        }
-        .message-content {
-            padding: 0.8rem;
-            border-radius: 8px;
-            background: #f1f5f9;
-            position: relative;
-        }
-        .message.own .message-content {
-            background: var(--primary-light);
-            color: white;
-        }
-        .message-actions {
-            display: none;
-            position: absolute;
-            top: -25px;
-            right: 10px;
-            gap: 0.5rem;
-        }
-        .message:hover .message-actions {
-            display: flex;
+            flex: 1;
+            text-decoration: none;
+            color: #333;
         }
         .action-btn {
-            padding: 0.3rem 0.6rem;
-            background: var(--primary);
-            color: white;
+            background: none;
             border: none;
-            border-radius: 4px;
             cursor: pointer;
-            font-size: 0.8rem;
+            color: #007bff;
         }
-        .action-btn:hover {
-            background: var(--primary-light);
-        }
-        .deleted {
-            font-style: italic;
-            color: var(--gray);
-        }
-        .pinned {
-            border-left: 4px solid var(--primary);
-        }
-        .reply {
-            background: #e2e8f0;
-            padding: 0.5rem;
-            border-radius: 4px;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-        }
-        .ai-response {
-            background: #f0f0f0;
-            border-left: 4px solid var(--primary);
-            padding: 1rem;
-            margin: 1rem 0;
-            font-family: monospace;
-            white-space: pre-wrap;
-        }
-        .input-area {
-            display: flex;
-            padding: 1rem;
-            border-top: 1px solid #e2e8f0;
-        }
-        .message-input {
-            flex-grow: 1;
-            padding: 0.8rem;
-            border: 1px solid #e2e8f0;
+        .group-info {
+            background-color: #f8f9fa;
+            padding: 15px;
             border-radius: 8px;
-            resize: none;
-            margin-right: 0.5rem;
-        }
-        .send-btn, .upload-btn {
-            padding: 0.8rem;
-            background: var(--primary);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            cursor: pointer;
-        }
-        .send-btn:hover, .upload-btn:hover {
-            background: var(--primary-light);
-        }
-        .typing-indicator {
-            font-size: 0.85rem;
-            color: var(--gray);
-            padding: 0.5rem 1rem;
-        }
-        .command-dropdown {
-            position: absolute;
-            bottom: 60px;
-            left: 1rem;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            box-shadow: var(--card-shadow);
-            padding: 0.5rem;
-            z-index: 10;
-        }
-        .command-btn {
-            display: block;
-            padding: 0.5rem 1rem;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            margin: 0.2rem 0;
-            cursor: pointer;
-            width: 100%;
-            text-align: left;
-        }
-        .command-btn:hover {
-            background: var(--primary-light);
-        }
-        @media (max-width: 768px) {
-            .chat-container {
-                flex-direction: column;
-            }
-            .sidebar {
-                width: 100%;
-                height: auto;
-            }
-            .messages {
-                max-height: 50vh;
-            }
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="chat-container">
+    <div class="container">
         <div class="sidebar">
-            <div class="group-header" onclick="toggleGroupInfo()">
-                <img src="<%= group.profilePicture %>" class="group-pic" alt="Group Picture">
-                <div class="group-info">
-                    <div class="group-name"><%= group.name %></div>
-                    <div class="online-count"><%= group.members.filter(m => m.isOnline).length %> online</div>
-                </div>
-            </div>
-            <div id="groupInfo" style="display: none; padding: 1rem; background: rgba(255, 255, 255, 0.1); border-radius: 8px; margin-bottom: 1rem;">
+            <div class="group-info">
+                <h2><%= group.name %></h2>
                 <p><strong>Description:</strong> <%= group.description %></p>
                 <p><strong>Members:</strong> <%= group.members.length %></p>
-                <p><strong>Link:</strong> <span id="groupLink"><%= `${req.protocol}://${req.get('host')}/chat` %></span></p>
+                <p><strong>Link:</strong> <span id="groupLink"><%= groupLink %></span></p>
                 <button onclick="copyGroupLink()" class="action-btn"><i class="fas fa-copy"></i> Copy Link</button>
             </div>
             <div class="members-list">
-                <% users.forEach(member => { %>
+                <% members.forEach(member => { %>
                     <div class="member <%= member.isOnline ? 'online' : '' %>">
                         <a href="/profile/<%= member._id %>"><img src="<%= member.profilePicture %>" class="member-pic" alt="<%= member.username %>"></a>
                         <a href="/profile/<%= member._id %>" class="member-name"><%= member.username %> <%= member.isAdmin ? '<i class="fas fa-check-circle verified"></i>' : '' %></a>
@@ -300,248 +136,74 @@
             </div>
         </div>
         <div class="chat-area">
-            <div class="messages" id="messages">
-                <% messages.forEach(msg => { %>
-                    <div class="message <%= msg.sender._id.toString() === user._id.toString() ? 'own' : '' %> <%= msg.isPinned ? 'pinned' : '' %>" data-id="<%= msg._id %>">
-                        <div class="message-header">
-                            <img src="<%= msg.sender.profilePicture %>" class="sender-pic" alt="<%= msg.sender.username %>">
-                            <span class="sender-name"><%= msg.sender.username %> <%= msg.sender.isAdmin ? '<i class="fas fa-check-circle verified"></i>' : '' %></span>
-                            <span class="timestamp"><%= new Date(msg.timestamp).toLocaleTimeString() %></span>
-                        </div>
-                        <div class="message-content <%= msg.isAI ? 'ai-response' : '' %>">
-                            <% if (msg.replyTo) { %>
-                                <div class="reply"><%= msg.replyTo.text.substring(0, 50) %>...</div>
-                            <% } %>
-                            <% if (msg.isDeleted) { %>
-                                <span class="deleted"><%= msg.deletedByAdmin ? 'This message was deleted by admin' : 'This message was deleted' %></span>
-                            <% } else { %>
-                                <%= msg.text %>
-                                <% if (msg.imageUrl) { %>
-                                    <img src="<%= msg.imageUrl %>" alt="Uploaded Image" style="max-width: 100%; border-radius: 8px; margin-top: 0.5rem;">
-                                <% } %>
-                                <% if (msg.isEdited) { %>
-                                    <span style="font-size: 0.8rem; color: var(--gray);">(edited)</span>
-                                <% } %>
-                            <% } %>
-                            <% if (!msg.isDeleted && (msg.sender._id.toString() === user._id.toString() || user.isAdmin)) { %>
-                                <div class="message-actions">
-                                    <% if (msg.sender._id.toString() === user._id.toString()) { %>
-                                        <button onclick="copyMessage('<%= msg._id %>')" class="action-btn"><i class="fas fa-copy"></i></button>
-                                        <button onclick="editMessage('<%= msg._id %>')" class="action-btn"><i class="fas fa-edit"></i></button>
-                                    <% } %>
-                                    <button onclick="deleteMessage('<%= msg._id %>')" class="action-btn"><i class="fas fa-trash"></i></button>
-                                    <% if (user.isAdmin) { %>
-                                        <button onclick="pinMessage('<%= msg._id %>')" class="action-btn"><i class="fas fa-thumbtack"></i></button>
-                                    <% } %>
-                                    <button onclick="replyToMessage('<%= msg._id %>')" class="action-btn"><i class="fas fa-reply"></i></button>
-                                </div>
-                            <% } %>
-                        </div>
+            <div class="messages">
+                <% messages.forEach(message => { %>
+                    <div class="message <%= message.sender._id.toString() === user._id.toString() ? 'sent' : 'received' %>">
+                        <strong><%= message.sender.username %></strong>
+                        <% if (message.replyTo) { %>
+                            <blockquote>Replying to: <%= message.replyTo.content %></blockquote>
+                        <% } %>
+                        <p><%= message.content %></p>
+                        <small><%= message.timestamp.toLocaleString() %></small>
                     </div>
                 <% }); %>
             </div>
-            <div class="typing-indicator" id="typingIndicator"></div>
             <div class="input-area">
-                <textarea id="messageInput" class="message-input" placeholder="Type a message..." rows="1"></textarea>
-                <input type="file" id="imageUpload" style="display: none;" accept="image/*">
-                <button class="upload-btn" onclick="document.getElementById('imageUpload').click()"><i class="fas fa-image"></i></button>
-                <button id="sendBtn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
+                <input type="text" id="messageInput" placeholder="Type a message...">
+                <button onclick="sendMessage()">Send</button>
             </div>
-            <div id="commandDropdown" class="command-dropdown" style="display: none;"></div>
         </div>
     </div>
+
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        const messagesDiv = document.getElementById('messages');
-        const messageInput = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const typingIndicator = document.getElementById('typingIndicator');
-        const commandDropdown = document.getElementById('commandDropdown');
-        let replyToId = null;
+        const userId = '<%= user._id %>';
 
-        socket.on('chat message', (msg) => {
-            addMessage(msg);
+        socket.on('chatMessage', (message) => {
+            const messagesDiv = document.querySelector('.messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', message.sender._id === userId ? 'sent' : 'received');
+            messageDiv.innerHTML = `
+                <strong>${message.sender.username}</strong>
+                ${message.replyTo ? `<blockquote>Replying to: ${message.replyTo.content}</blockquote>` : ''}
+                <p>${message.content}</p>
+                <small>${new Date(message.timestamp).toLocaleString()}</small>
+            `;
+            messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         });
 
-        socket.on('message edited', (msg) => {
-            const messageEl = document.querySelector(`.message[data-id="${msg._id}"] .message-content`);
-            messageEl.innerHTML = msg.text + ' <span style="font-size: 0.8rem; color: var(--gray);">(edited)</span>';
-        });
-
-        socket.on('message deleted', (data) => {
-            const messageEl = document.querySelector(`.message[data-id="${data.id}"] .message-content`);
-            messageEl.innerHTML = `<span class="deleted">${data.deletedByAdmin ? 'This message was deleted by admin' : 'This message was deleted'}</span>`;
-            messageEl.querySelector('.message-actions')?.remove();
-        });
-
-        socket.on('message pinned', (msg) => {
-            const messageEl = document.querySelector(`.message[data-id="${msg._id}"]`);
-            messageEl.classList.toggle('pinned', msg.isPinned);
-        });
-
-        socket.on('user typing', (data) => {
-            typingIndicator.textContent = `${data.username} is typing...`;
-            setTimeout(() => typingIndicator.textContent = '', 2000);
-        });
-
-        socket.on('user status', (data) => {
-            const memberEl = document.querySelector(`.member[href="/profile/${data.userId}"]`).parentElement;
-            memberEl.classList.toggle('online', data.isOnline);
-        });
-
-        socket.on('error', (msg) => alert(msg));
-
-        sendBtn.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
+        socket.on('userStatus', (data) => {
+            const memberDiv = document.querySelector(`.member a[href="/profile/${data.userId}"]`)?.parentElement;
+            if (memberDiv) {
+                memberDiv.classList.toggle('online', data.isOnline);
             }
         });
-
-        messageInput.addEventListener('input', () => {
-            socket.emit('typing');
-            if (messageInput.value.endsWith('@')) {
-                showCommandDropdown();
-            } else {
-                hideCommandDropdown();
-            }
-        });
-
-        document.getElementById('imageUpload').addEventListener('change', uploadImage);
 
         function sendMessage() {
-            const text = messageInput.value.trim();
-            if (!text) return;
-            if (text.startsWith('/GTP')) {
-                socket.emit('ai command', { text });
-            } else {
-                socket.emit('chat message', { text, replyTo: replyToId });
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            if (content) {
+                socket.emit('chatMessage', { content });
+                input.value = '';
             }
-            messageInput.value = '';
-            replyToId = null;
-            hideCommandDropdown();
-        }
-
-        function uploadImage() {
-            const file = document.getElementById('imageUpload').files[0];
-            if (!file) return;
-            const formData = new FormData();
-            formData.append('image', file);
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            }).then(res => res.json()).then(data => {
-                socket.emit('chat message', { text: messageInput.value, imageUrl: data.imageUrl, replyTo: replyToId });
-                messageInput.value = '';
-                replyToId = null;
-            });
-        }
-
-        function addMessage(msg) {
-            const div = document.createElement('div');
-            div.className = `message ${msg.sender._id === '<%= user._id %>' ? 'own' : ''} ${msg.isPinned ? 'pinned' : ''}`;
-            div.dataset.id = msg._id;
-            div.innerHTML = `
-                <div class="message-header">
-                    <img src="${msg.sender.profilePicture}" class="sender-pic" alt="${msg.sender.username}">
-                    <span class="sender-name">${msg.sender.username} ${msg.sender.isAdmin ? '<i class="fas fa-check-circle verified"></i>' : ''}</span>
-                    <span class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</span>
-                </div>
-                <div class="message-content ${msg.isAI ? 'ai-response' : ''}">
-                    ${msg.replyTo ? `<div class="reply">${msg.replyTo.text.substring(0, 50)}...</div>` : ''}
-                    ${msg.isDeleted ? `<span class="deleted">${msg.deletedByAdmin ? 'This message was deleted by admin' : 'This message was deleted'}</span>` : 
-                        `${msg.text}${msg.imageUrl ? `<img src="${msg.imageUrl}" alt="Uploaded Image" style="max-width: 100%; border-radius: 8px; margin-top: 0.5rem;">` : ''}${msg.isEdited ? ' <span style="font-size: 0.8rem; color: var(--gray);">(edited)</span>' : ''}`}
-                    ${!msg.isDeleted && (msg.sender._id === '<%= user._id %>' || <%= user.isAdmin %>) ? `
-                        <div class="message-actions">
-                            ${msg.sender._id === '<%= user._id %>' ? `
-                                <button onclick="copyMessage('${msg._id}')" class="action-btn"><i class="fas fa-copy"></i></button>
-                                <button onclick="editMessage('${msg._id}')" class="action-btn"><i class="fas fa-edit"></i></button>
-                            ` : ''}
-                            <button onclick="deleteMessage('${msg._id}')" class="action-btn"><i class="fas fa-trash"></i></button>
-                            ${<%= user.isAdmin %> ? `<button onclick="pinMessage('${msg._id}')" class="action-btn"><i class="fas fa-thumbtack"></i></button>` : ''}
-                            <button onclick="replyToMessage('${msg._id}')" class="action-btn"><i class="fas fa-reply"></i></button>
-                        </div>` : ''}
-                </div>`;
-            messagesDiv.appendChild(div);
-        }
-
-        function copyMessage(id) {
-            const text = document.querySelector(`.message[data-id="${id}"] .message-content`).textContent;
-            navigator.clipboard.writeText(text);
-        }
-
-        function editMessage(id) {
-            const text = prompt('Edit message:', document.querySelector(`.message[data-id="${id}"] .message-content`).textContent);
-            if (text) socket.emit('edit message', { id, text });
-        }
-
-        function deleteMessage(id) {
-            if (confirm('Are you sure you want to delete this message?')) {
-                socket.emit('delete message', { id });
-            }
-        }
-
-        function pinMessage(id) {
-            socket.emit('pin message', { id });
-        }
-
-        function replyToMessage(id) {
-            replyToId = id;
-            messageInput.focus();
-        }
-
-        function toggleGroupInfo() {
-            const groupInfo = document.getElementById('groupInfo');
-            groupInfo.style.display = groupInfo.style.display === 'none' ? 'block' : 'none';
-        }
-
-        function copyGroupLink() {
-            navigator.clipboard.writeText(document.getElementById('groupLink').textContent);
-            alert('Group link copied!');
         }
 
         function startPrivateChat(userId) {
             window.location.href = `/private-chat/${userId}`;
         }
 
-        function showCommandDropdown() {
-            commandDropdown.innerHTML = `
-                <button class="command-btn" onclick="selectCommand('/GTP chatgpt')">ChatGPT</button>
-                <button class="command-btn" onclick="selectCommand('/GTP llama')">Llama</button>
-                <button class="command-btn" onclick="selectCommand('/GTP deepseek-v3')">Deepseek-v3</button>
-                <button class="command-btn" onclick="selectCommand('/GTP deepseek-r1')">Deepseek-r1</button>
-                <button class="command-btn" onclick="selectCommand('/GTP meta-ai')">Meta-AI</button>
-                <button class="command-btn" onclick="selectCommand('/GTP gpt4')">GPT-4</button>
-                <button class="command-btn" onclick="selectCommand('/GTP claude')">Claude Sonnet</button>
-                <button class="command-btn" onclick="selectCommand('/GTP uncensored')">Uncensored AI</button>
-                <button class="command-btn" onclick="selectCommand('/GTP pixtral')">Pixtral</button>
-                <button class="command-btn" onclick="selectCommand('/GTP gemma')">Gemma</button>
-                <button class="command-btn" onclick="selectCommand('/GTP qvq')">QVQ 72B</button>
-                <button class="command-btn" onclick="selectCommand('/GTP qwen2')">Qwen2</button>
-                <button class="command-btn" onclick="selectCommand('/GTP gemini')">Gemini</button>
-                <button class="command-btn" onclick="selectCommand('/GTP gemini-pro')">Gemini Pro</button>
-                <button class="command-btn" onclick="selectCommand('/GTP gpt-turbo')">GPT Turbo</button>
-                <button class="command-btn" onclick="selectCommand('/GTP letme')">Letme GPT</button>
-                <button class="command-btn" onclick="selectCommand('/GTP simsimi')">Simsimi</button>
-                <button class="command-btn" onclick="selectCommand('/GTP lumin')">Lumin AI</button>
-                <button class="command-btn" onclick="selectCommand('/GTP wwd')">WWD GPT</button>
-            `;
-            commandDropdown.style.display = 'block';
+        function copyGroupLink() {
+            const link = document.getElementById('groupLink').textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('Link copied to clipboard!');
+            });
         }
 
-        function hideCommandDropdown() {
-            commandDropdown.style.display = 'none';
-        }
-
-        function selectCommand(command) {
-            messageInput.value = command + ' ';
-            hideCommandDropdown();
-            messageInput.focus();
-        }
-
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
     </script>
 </body>
 </html>
