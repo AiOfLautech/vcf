@@ -20,26 +20,21 @@
             --card-bg: #ffffff;
             --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Inter', sans-serif;
         }
-
         body {
             background-color: #f1f5f9;
             color: #334155;
             min-height: 100vh;
         }
-
         .dashboard-container {
             display: flex;
             min-height: 100vh;
         }
-
-        /* Sidebar Styles */
         .sidebar {
             width: 260px;
             background: var(--dark);
@@ -50,7 +45,6 @@
             box-shadow: var(--card-shadow);
             z-index: 10;
         }
-
         .logo {
             display: flex;
             align-items: center;
@@ -59,32 +53,26 @@
             padding-bottom: 1rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-
         .logo i {
             font-size: 1.8rem;
             color: var(--primary-light);
         }
-
         .logo-text {
             font-size: 1.4rem;
             font-weight: 700;
         }
-
         .logo-text span:first-child {
             color: var(--primary-light);
         }
-
         .logo-text span:last-child {
             color: white;
         }
-
         .nav-links {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
             flex-grow: 1;
         }
-
         .nav-link {
             display: flex;
             align-items: center;
@@ -96,123 +84,37 @@
             transition: all 0.3s ease;
             font-weight: 500;
         }
-
         .nav-link:hover, .nav-link.active {
             background: rgba(99, 102, 241, 0.15);
             color: var(--primary-light);
         }
-
         .nav-link i {
             font-size: 1.2rem;
             width: 24px;
             text-align: center;
         }
-
-        .user-section {
-            margin-top: auto;
-            padding-top: 1rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: white;
-        }
-
-        .user-details {
-            flex-grow: 1;
-        }
-
-        .user-name {
-            font-weight: 600;
-            margin-bottom: 0.2rem;
-            font-size: 0.95rem;
-        }
-
-        .user-email {
-            font-size: 0.8rem;
-            color: var(--gray);
-        }
-
-        .logout-btn {
-            display: block;
-            width: 100%;
-            text-align: center;
-            padding: 0.6rem;
-            margin-top: 1rem;
-            background: rgba(99, 102, 241, 0.15);
-            color: var(--primary-light);
-            border-radius: 8px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .logout-btn:hover {
-            background: rgba(99, 102, 241, 0.25);
-        }
-
-        /* Main Content Styles */
         .main-content {
             flex-grow: 1;
             padding: 2rem;
             overflow-y: auto;
         }
-
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
         }
-
         .header h1 {
             font-size: 1.8rem;
             font-weight: 700;
             color: var(--dark);
         }
-
-        .create-session-btn {
-            padding: 0.8rem 1.5rem;
-            background: var(--primary);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            box-shadow: var(--card-shadow);
-        }
-
-        .create-session-btn:hover {
-            background: var(--primary-light);
-            transform: translateY(-2px);
-        }
-
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2.5rem;
         }
-
         .stat-card {
             background: var(--card-bg);
             border-radius: 12px;
@@ -220,25 +122,21 @@
             box-shadow: var(--card-shadow);
             transition: all 0.3s ease;
         }
-
         .stat-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
-
         .stat-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
         }
-
         .stat-title {
             font-size: 1rem;
             color: var(--gray);
             font-weight: 500;
         }
-
         .stat-icon {
             width: 40px;
             height: 40px;
@@ -250,67 +148,36 @@
             font-size: 1.2rem;
             color: var(--primary);
         }
-
         .stat-value {
             font-size: 1.8rem;
             font-weight: 700;
             color: var(--dark);
             margin-bottom: 0.25rem;
         }
-
-        .stat-change {
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            color: var(--primary);
-        }
-
-        /* Sessions Section */
         .sessions-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1.5rem;
         }
-
         .section-title {
             font-size: 1.5rem;
             font-weight: 600;
             color: var(--dark);
         }
-
-        .view-all {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
         .sessions-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 1.5rem;
         }
-
         .session-card {
             background: var(--card-bg);
             border-radius: 12px;
             padding: 1.5rem;
-            transition: all 0.3s ease;
             box-shadow: var(--card-shadow);
             position: relative;
-            overflow: hidden;
             border-top: 4px solid var(--primary);
         }
-
-        .session-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-        }
-
         .session-id {
             position: absolute;
             top: 1.5rem;
@@ -322,71 +189,16 @@
             font-weight: 600;
             color: var(--primary);
         }
-
         .session-name {
             font-size: 1.3rem;
             font-weight: 600;
             margin-bottom: 0.8rem;
             color: var(--dark);
         }
-
-        .session-meta {
-            display: flex;
-            gap: 1.5rem;
-            margin-bottom: 1.2rem;
-        }
-
-        .meta-item {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .meta-label {
-            font-size: 0.85rem;
-            color: var(--gray);
-            margin-bottom: 0.3rem;
-        }
-
-        .meta-value {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .progress-container {
-            margin-bottom: 1.5rem;
-        }
-
-        .progress-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-
-        .progress-label {
-            font-size: 0.9rem;
-            color: var(--gray);
-        }
-
-        .progress-bar {
-            height: 8px;
-            background: #e2e8f0;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--primary-light));
-            border-radius: 10px;
-            width: 75%;
-        }
-
         .session-actions {
             display: flex;
             gap: 0.8rem;
         }
-
         .session-action {
             flex: 1;
             padding: 0.8rem;
@@ -397,369 +209,148 @@
             text-decoration: none;
             font-size: 0.9rem;
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
+            border: none;
+            cursor: pointer;
         }
-
         .session-action:hover {
             background: #e2e8f0;
         }
-
-        .session-action.download {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--secondary);
+        .btn-danger {
+            background: var(--danger);
+            color: white;
         }
-
-        .session-action.download:hover {
-            background: rgba(16, 185, 129, 0.2);
+        .btn-warning {
+            background: var(--warning);
+            color: white;
         }
-
-        /* Users Section */
-        .users-section {
-            margin-top: 3rem;
+        .btn-success {
+            background: var(--secondary);
+            color: white;
         }
-
-        .user-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-
-        .user-table th, .user-table td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .user-table th {
-            background-color: #f1f5f9;
+        .chat-btn {
+            padding: 0.8rem 1.5rem;
+            background: var(--primary);
+            border: none;
+            border-radius: 8px;
+            color: white;
             font-weight: 600;
-        }
-
-        .user-status {
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-        }
-
-        .status-active {
-            background-color: #10b98120;
-            color: #10b981;
-        }
-
-        .status-suspended {
-            background-color: #f59e0b20;
-            color: #f59e0b;
-        }
-
-        .status-banned {
-            background-color: #ef444420;
-            color: #ef4444;
-        }
-
-        .admin-badge {
-            background-color: #6366f120;
-            color: #6366f1;
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .action-button {
-            padding: 0.5rem;
-            border-radius: 6px;
             cursor: pointer;
-            font-size: 0.85rem;
+            transition: all 0.3s ease;
         }
-
-        .suspend-btn {
-            background: #f59e0b20;
-            color: #f59e0b;
+        .chat-btn:hover {
+            background: var(--primary-light);
         }
-
-        .ban-btn {
-            background: #ef444420;
-            color: #ef4444;
-        }
-
-        .activate-btn {
-            background: #10b98120;
-            color: #10b981;
-        }
-
-        .promote-btn {
-            background: #6366f120;
-            color: #6366f1;
-        }
-
-        .delete-btn {
-            background: #ef444420;
-            color: #ef4444;
-        }
-
-        /* Responsive Styles */
-        @media (max-width: 1200px) {
-            .sessions-grid {
-                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            }
-        }
-
-        @media (max-width: 992px) {
-            .sidebar {
-                width: 220px;
-            }
-        }
-
         @media (max-width: 768px) {
             .dashboard-container {
                 flex-direction: column;
             }
-            
             .sidebar {
                 width: 100%;
-                padding: 1rem;
             }
-            
-            .main-content {
-                padding: 1.5rem;
-            }
-            
-            .stats-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-            
             .sessions-grid {
                 grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-            
-            .session-meta {
-                flex-direction: column;
-                gap: 0.8rem;
             }
         }
     </style>
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="logo">
                 <i class="fas fa-bolt"></i>
-                <div class="logo-text">
-                    <span>Contact</span><span>Gain</span>
-                </div>
+                <div class="logo-text"><span>Contact</span><span>Gain</span></div>
             </div>
             <div class="nav-links">
-                <a href="#" class="nav-link active"><i class="fas fa-chart-line"></i> Dashboard</a>
-                <a href="#" class="nav-link"><i class="fas fa-users"></i> Sessions</a>
-                <a href="#" class="nav-link"><i class="fas fa-file-contract"></i> Contacts</a>
-                <a href="#" class="nav-link"><i class="fas fa-history"></i> History</a>
-                <a href="/chat" class="nav-link"><i class="fas fa-comments"></i> Community Chat</a>
-                <a href="#" class="nav-link"><i class="fas fa-cog"></i> Settings</a>
-            </div>
-            <div class="user-section">
-                <div class="user-info">
-                    <div class="user-avatar"><%= user.username.charAt(0).toUpperCase() %></div>
-                    <div class="user-details">
-                        <div class="user-name"><%= user.username %></div>
-                        <div class="user-email">Administrator</div>
-                    </div>
-                </div>
-                <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <a href="/admin" class="nav-link active"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="/chat" class="nav-link"><i class="fas fa-comment"></i> Community Chat</a>
             </div>
         </div>
-
-        <!-- Main Content -->
         <div class="main-content">
             <div class="header">
                 <h1>Admin Dashboard</h1>
-                <button class="create-session-btn" onclick="window.location.href='/'">
-                    <i class="fas fa-plus"></i> New Session
-                </button>
+                <button class="chat-btn" onclick="window.location.href='/chat'"><i class="fas fa-comment"></i> Go to Chat</button>
             </div>
-
-            <!-- Stats Grid -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-header">
                         <div class="stat-title">Total Users</div>
-                        <div class="stat-icon">
-                            <i class="fas fa-user-friends"></i>
-                        </div>
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
                     </div>
                     <div class="stat-value"><%= stats.totalUsers %></div>
-                    <div class="stat-change">
-                        <i class="fas fa-arrow-up"></i> 12.4% from last month
-                    </div>
                 </div>
-
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">Total Sessions</div>
+                        <div class="stat-icon"><i class="fas fa-gift"></i></div>
+                    </div>
+                    <div class="stat-value"><%= stats.totalSessions %></div>
+                </div>
                 <div class="stat-card">
                     <div class="stat-header">
                         <div class="stat-title">Active Sessions</div>
-                        <div class="stat-icon">
-                            <i class="fas fa-gift"></i>
-                        </div>
+                        <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
                     </div>
                     <div class="stat-value"><%= stats.activeSessions %></div>
-                    <div class="stat-change">
-                        <i class="fas fa-arrow-up"></i> 8.2% from last month
-                    </div>
                 </div>
-
                 <div class="stat-card">
                     <div class="stat-header">
                         <div class="stat-title">Total Downloads</div>
-                        <div class="stat-icon">
-                            <i class="fas fa-download"></i>
-                        </div>
+                        <div class="stat-icon"><i class="fas fa-download"></i></div>
                     </div>
                     <div class="stat-value"><%= stats.totalDownloads %></div>
-                    <div class="stat-change">
-                        <i class="fas fa-arrow-up"></i> 4.3% from last month
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-title">Succeeded Downloads</div>
-                        <div class="stat-icon">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                    </div>
-                    <div class="stat-value"><%= stats.succeededDownloads %></div>
-                    <div class="stat-change">
-                        <i class="fas fa-arrow-up"></i> 3.1% from last month
-                    </div>
                 </div>
             </div>
-
-            <!-- Recent Sessions -->
             <div class="sessions-section">
                 <div class="sessions-header">
-                    <div class="section-title">Recent Sessions</div>
-                    <a href="#" class="view-all">View All <i class="fas fa-arrow-right"></i></a>
+                    <div class="section-title">Manage Users</div>
                 </div>
                 <div class="sessions-grid">
-                    <% recentSessions.forEach(session => { %>
+                    <% users.forEach(user => { %>
                         <div class="session-card">
-                            <div class="session-id"><%= session.sessionId %></div>
-                            <div class="session-name"><%= session.groupName %></div>
-                            <div class="session-meta">
-                                <div class="meta-item">
-                                    <div class="meta-label">Contacts</div>
-                                    <div class="meta-value"><%= session.contactCount %></div>
-                                </div>
-                                <div class="meta-item">
-                                    <div class="meta-label">Downloads</div>
-                                    <div class="meta-value"><%= session.downloadCount %></div>
-                                </div>
-                                <div class="meta-item">
-                                    <div class="meta-label">Status</div>
-                                    <div class="meta-value"><%= session.status %></div>
-                                </div>
-                            </div>
+                            <div class="session-id"><%= user._id %></div>
+                            <div class="session-name"><%= user.username %> <%= user.isAdmin ? '<i class="fas fa-check-circle" style="color: #10b981;"></i>' : '' %></div>
+                            <div>Status: <%= user.status %></div>
                             <div class="session-actions">
-                                <a href="/session/<%= session.sessionId %>" class="session-action" target="_blank">
-                                    <i class="fas fa-external-link-alt"></i> View
-                                </a>
-                                <a href="/admin/delete-session/<%= session.sessionId %>" class="session-action" style="background: #ef4444; color: white;">
-                                    <i class="fas fa-trash"></i> Delete
-                                </a>
+                                <form action="/admin/suspend-user/<%= user._id %>" method="POST" style="display:inline;">
+                                    <button type="submit" class="session-action btn-warning"><i class="fas fa-pause"></i> Suspend</button>
+                                </form>
+                                <form action="/admin/ban-user/<%= user._id %>" method="POST" style="display:inline;">
+                                    <button type="submit" class="session-action btn-danger"><i class="fas fa-ban"></i> Ban</button>
+                                </form>
+                                <form action="/admin/unsuspend-user/<%= user._id %>" method="POST" style="display:inline;">
+                                    <button type="submit" class="session-action btn-success"><i class="fas fa-play"></i> Unsuspend</button>
+                                </form>
+                                <form action="/admin/unban-user/<%= user._id %>" method="POST" style="display:inline;">
+                                    <button type="submit" class="session-action btn-success"><i class="fas fa-undo"></i> Unban</button>
+                                </form>
+                                <form action="/admin/promote-user/<%= user._id %>" method="POST" style="display:inline;">
+                                    <button type="submit" class="session-action"><i class="fas fa-crown"></i> Promote</button>
+                                </form>
+                                <form action="/admin/delete-user/<%= user._id %>" method="POST" style="display:inline;">
+                                    <button type="submit" class="session-action btn-danger"><i class="fas fa-trash"></i> Delete</button>
+                                </form>
                             </div>
                         </div>
                     <% }); %>
                 </div>
             </div>
-
-            <!-- Users Section -->
-            <div class="users-section">
+            <div class="sessions-section">
                 <div class="sessions-header">
-                    <div class="section-title">User Management</div>
+                    <div class="section-title">Manage Sessions</div>
                 </div>
-                <table class="user-table">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Status</th>
-                            <th>Role</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% users.forEach(user => { %>
-                            <tr>
-                                <td><%= user.username %></td>
-                                <td>
-                                    <span class="user-status 
-                                        <%= user.status === 'active' ? 'status-active' : 
-                                           user.status === 'suspended' ? 'status-suspended' : 
-                                           'status-banned' %>">
-                                        <%= user.status.charAt(0).toUpperCase() + user.status.slice(1) %>
-                                    </span>
-                                </td>
-                                <td>
-                                    <% if (user.isAdmin) { %>
-                                        <span class="admin-badge">Admin</span>
-                                    <% } else { %>
-                                        Member
-                                    <% } %>
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <% if (user.status === 'active') { %>
-                                            <button class="action-button suspend-btn" onclick="location.href='/admin/suspend-user/<%= user._id %>'">
-                                                <i class="fas fa-pause"></i> Suspend
-                                            </button>
-                                            <button class="action-button ban-btn" onclick="location.href='/admin/ban-user/<%= user._id %>'">
-                                                <i class="fas fa-ban"></i> Ban
-                                            </button>
-                                        <% } else if (user.status === 'suspended') { %>
-                                            <button class="action-button activate-btn" onclick="location.href='/admin/unsuspend-user/<%= user._id %>'">
-                                                <i class="fas fa-play"></i> Activate
-                                            </button>
-                                            <button class="action-button ban-btn" onclick="location.href='/admin/ban-user/<%= user._id %>'">
-                                                <i class="fas fa-ban"></i> Ban
-                                            </button>
-                                        <% } else { %>
-                                            <button class="action-button activate-btn" onclick="location.href='/admin/unban-user/<%= user._id %>'">
-                                                <i class="fas fa-user-check"></i> Unban
-                                            </button>
-                                        <% } %>
-                                        
-                                        <% if (!user.isAdmin) { %>
-                                            <button class="action-button promote-btn" onclick="location.href='/admin/promote-user/<%= user._id %>'">
-                                                <i class="fas fa-shield-alt"></i> Promote
-                                            </button>
-                                        <% } %>
-                                        
-                                        <button class="action-button delete-btn" onclick="location.href='/admin/delete-user/<%= user._id %>'">
-                                            <i class="fas fa-trash"></i> Delete
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        <% }); %>
-                    </tbody>
-                </table>
+                <div class="sessions-grid">
+                    <% sessions.forEach(session => { %>
+                        <div class="session-card">
+                            <div class="session-id"><%= session.sessionId %></div>
+                            <div class="session-name"><%= session.groupName %></div>
+                            <div class="session-actions">
+                                <form action="/admin/delete-session/<%= session.sessionId %>" method="POST" style="display:inline;">
+                                    <button type="submit" class="session-action btn-danger"><i class="fas fa-trash"></i> Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
             </div>
         </div>
     </div>
