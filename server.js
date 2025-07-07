@@ -11,6 +11,7 @@ const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const multer = require('multer');
+const axios = require('axios');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -29,6 +30,7 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'e24c9bf7d58a4c3e9f1a6b8c7d3e2f4981a0b3c4d5e6f7a8b9c0d1e2f3a4b5c6',
   resave: false,
@@ -173,6 +175,7 @@ async function createDefaultGroup() {
 
 // Socket.IO Implementation
 const onlineUsers = new Map();
+const typingUsers = {};
 
 io.on('connection', (socket) => {
   console.log('a user connected');
@@ -233,92 +236,128 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Handle private messages
-  socket.on('private-message', async (data) => {
+  // Handle AI commands
+  socket.on('ai-command', async (data) => {
     try {
-      const { senderId, receiverId, content, image } = data;
-      const sender = await User.findById(senderId);
-      const receiver = await User.findById(receiverId);
+      const { userId, groupId, command, query } = data;
+      const user = await User.findById(userId);
       
-      if (sender && sender.status === 'active' && receiver && receiver.status === 'active') {
-        const message = new PrivateMessage({
-          sender: senderId,
-          receiver: receiverId,
-          content,
-          image
-        });
+      if (user && user.status === 'active') {
+        // AI APIs
+        const aiApis = {
+          'gpt': 'https://apis.davidcyriltech.my.id/ai/chatbot?query=',
+          'llama3': 'https://apis.davidcyriltech.my.id/ai/llama3?text=',
+          'deepseek-v3': 'https://apis.davidcyriltech.my.id/ai/deepseek-v3?text=',
+          'deepseek-r1': 'https://apis.davidcyriltech.my.id/ai/deepseek-r1?text=',
+          'metaai': 'https://apis.davidcyriltech.my.id/ai/metaai?text=',
+          'gpt4': 'https://apis.davidcyriltech.my.id/ai/gpt4?text=',
+          'claudeSonnet': 'https://apis.davidcyriltech.my.id/ai/claudeSonnet?text=',
+          'uncensor': 'https://apis.davidcyriltech.my.id/ai/uncensor?text=',
+          'pixtral': 'https://apis.davidcyriltech.my.id/ai/pixtral?text=',
+          'gemma': 'https://apis.davidcyriltech.my.id/ai/gemma?text=',
+          'qvq': 'https://apis.davidcyriltech.my.id/ai/qvq?text=',
+          'qwen2Coder': 'https://apis.davidcyriltech.my.id/ai/qwen2Coder?text=',
+          'gemini': 'https://api.giftedtech.web.id/api/ai/geminiai?apikey=gifted&q=',
+          'geminiPro': 'https://api.giftedtech.web.id/api/ai/geminiaipro?apikey=gifted&q=',
+          'gpt-turbo': 'https://api.giftedtech.web.id/api/ai/gpt-turbo?apikey=gifted&q=',
+          'letmegpt': 'https://api.giftedtech.web.id/api/ai/letmegpt?apikey=gifted&query=',
+          'simsimi': 'https://api.giftedtech.web.id/api/ai/simsimi?apikey=gifted&query=',
+          'luminai': 'https://api.giftedtech.web.id/api/ai/luminai?apikey=gifted&query=',
+          'wwdgpt': 'https://api.giftedtech.web.id/api/ai/wwdgpt?apikey=gifted&prompt=',
+          'text2img': 'https://api.giftedtech.web.id/api/ai/text2img?apikey=gifted&prompt=',
+          'sd': 'https://api.giftedtech.web.id/api/ai/sd?apikey=gifted&prompt=',
+          'fluximg': 'https://api.giftedtech.web.id/api/ai/fluximg?apikey=gifted&prompt=',
+          'tiktokdlv1': 'https://api.giftedtech.web.id/api/download/tiktokdlv1?apikey=gifted&url='
+        };
         
-        const savedMessage = await message.save();
-        const populatedMessage = await PrivateMessage.findById(savedMessage._id)
-          .populate('sender')
-          .populate('receiver');
+        // Response paths
+        const responsePaths = {
+          'gpt': 'result',
+          'llama3': 'message',
+          'deepseek-v3': 'response',
+          'deepseek-r1': 'response',
+          'metaai': 'response',
+          'gpt4': 'message',
+          'claudeSonnet': 'response',
+          'uncensor': 'response',
+          'pixtral': 'response',
+          'gemma': 'response',
+          'qvq': 'response',
+          'qwen2Coder': 'response',
+          'gemini': 'result',
+          'geminiPro': 'result',
+          'gpt-turbo': 'result',
+          'letmegpt': 'result',
+          'simsimi': 'result',
+          'luminai': 'result',
+          'wwdgpt': 'result',
+          'text2img': 'result',
+          'sd': 'result',
+          'fluximg': 'result',
+          'tiktokdlv1': 'result.video.noWatermark'
+        };
         
-        // Emit to sender and receiver
-        io.to(onlineUsers.get(senderId)).emit('new-private-message', populatedMessage);
-        io.to(onlineUsers.get(receiverId)).emit('new-private-message', populatedMessage);
+        let apiUrl = aiApis[command] + encodeURIComponent(query);
+        const responsePath = responsePaths[command] || 'result';
+        
+        // Handle special cases
+        if (command === 'tiktokdlv1') {
+          apiUrl = aiApis.tiktokdlv1 + encodeURIComponent(query);
+        }
+        
+        try {
+          const response = await axios.get(apiUrl);
+          const data = response.data;
+          
+          // Extract response based on path
+          let responseText = responsePath.split('.').reduce((o, p) => o?.[p], data);
+          
+          if (!responseText) {
+            responseText = 'This feature is coming soon!';
+          }
+          
+          // Create AI message
+          const aiMessage = {
+            _id: Date.now().toString(),
+            sender: { _id: 'ai', username: 'AI Assistant' },
+            content: responseText,
+            command: command,
+            createdAt: new Date()
+          };
+          
+          // Emit AI response
+          io.to(groupId).emit('ai-response', aiMessage);
+        } catch (error) {
+          console.error('AI API error:', error);
+          const aiMessage = {
+            _id: Date.now().toString(),
+            sender: { _id: 'ai', username: 'AI Assistant' },
+            content: 'This feature is coming soon!',
+            command: command,
+            createdAt: new Date()
+          };
+          io.to(groupId).emit('ai-response', aiMessage);
+        }
       }
     } catch (err) {
-      console.error('Private message error:', err);
+      console.error('AI command error:', err);
     }
   });
 
   // Typing indicator
   socket.on('typing', ({ groupId, userId, isTyping }) => {
-    socket.to(groupId).emit('typing', { userId, isTyping });
-  });
-
-  // Handle message deletion
-  socket.on('delete-message', async ({ messageId, userId, isAdmin }) => {
-    try {
-      const message = await Message.findById(messageId);
-      if (message) {
-        if (message.sender.toString() === userId || isAdmin) {
-          message.isDeleted = true;
-          message.deletedBy = isAdmin ? userId : null;
-          await message.save();
-          
-          io.emit('message-deleted', { messageId, deletedBy: isAdmin ? 'admin' : 'user' });
-        }
+    if (isTyping) {
+      typingUsers[userId] = setTimeout(() => {
+        delete typingUsers[userId];
+        io.to(groupId).emit('typing', { userId, isTyping: false });
+      }, 3000);
+    } else {
+      if (typingUsers[userId]) {
+        clearTimeout(typingUsers[userId]);
+        delete typingUsers[userId];
       }
-    } catch (err) {
-      console.error('Delete message error:', err);
     }
-  });
-
-  // Handle message editing
-  socket.on('edit-message', async ({ messageId, userId, newContent }) => {
-    try {
-      const message = await Message.findById(messageId);
-      if (message && message.sender.toString() === userId) {
-        message.content = newContent;
-        message.edited = true;
-        await message.save();
-        
-        io.emit('message-edited', { messageId, newContent });
-      }
-    } catch (err) {
-      console.error('Edit message error:', err);
-    }
-  });
-
-  // Handle replies
-  socket.on('reply-to-message', async ({ messageId, userId, content }) => {
-    try {
-      const message = await Message.findById(messageId);
-      if (message) {
-        message.replies.push({
-          sender: userId,
-          content
-        });
-        
-        await message.save();
-        const populatedMessage = await Message.findById(messageId).populate('replies.sender');
-        
-        io.emit('message-replied', { messageId, reply: populatedMessage.replies.slice(-1)[0] });
-      }
-    } catch (err) {
-      console.error('Reply to message error:', err);
-    }
+    io.to(groupId).emit('typing', { userId, isTyping });
   });
 
   // User disconnects
@@ -344,6 +383,7 @@ io.on('connection', (socket) => {
 app.get('/', (req, res) => res.render('index'));
 app.get('/login', (req, res) => res.render('login'));
 app.get('/signup', (req, res) => res.render('signup'));
+app.get('/api', (req, res) => res.render('api'));
 
 // Terminal (Dashboard)
 app.get('/terminal', isAuthenticated, async (req, res) => {
@@ -385,7 +425,8 @@ app.get('/chat', isAuthenticated, async (req, res) => {
       user: req.user,
       group,
       messages: messages.reverse(),
-      onlineUsers: Array.from(onlineUsers.keys())
+      onlineUsers: Array.from(onlineUsers.keys()),
+      whatsappLink: process.env.WHATSAPP_LINK || 'https://whatsapp.com/channel/0029Va9A8b4Jz9l4Z5z5Z5Z5'
     });
   } catch (err) {
     console.error('Chat error:', err);
