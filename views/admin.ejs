@@ -416,6 +416,94 @@
             background: rgba(16, 185, 129, 0.2);
         }
 
+        /* Users Section */
+        .users-section {
+            margin-top: 3rem;
+        }
+
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .user-table th, .user-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .user-table th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        .user-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .status-active {
+            background-color: #10b98120;
+            color: #10b981;
+        }
+
+        .status-suspended {
+            background-color: #f59e0b20;
+            color: #f59e0b;
+        }
+
+        .status-banned {
+            background-color: #ef444420;
+            color: #ef4444;
+        }
+
+        .admin-badge {
+            background-color: #6366f120;
+            color: #6366f1;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-button {
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .suspend-btn {
+            background: #f59e0b20;
+            color: #f59e0b;
+        }
+
+        .ban-btn {
+            background: #ef444420;
+            color: #ef4444;
+        }
+
+        .activate-btn {
+            background: #10b98120;
+            color: #10b981;
+        }
+
+        .promote-btn {
+            background: #6366f120;
+            color: #6366f1;
+        }
+
+        .delete-btn {
+            background: #ef444420;
+            color: #ef4444;
+        }
+
         /* Responsive Styles */
         @media (max-width: 1200px) {
             .sessions-grid {
@@ -603,76 +691,69 @@
             </div>
 
             <!-- Users Section -->
-            <div class="sessions-section" style="margin-top: 3rem;">
+            <div class="users-section">
                 <div class="sessions-header">
                     <div class="section-title">User Management</div>
                 </div>
-                <table style="width: 100%; border-collapse: collapse;">
+                <table class="user-table">
                     <thead>
-                        <tr style="background-color: #f1f5f9; border-bottom: 1px solid #e2e8f0;">
-                            <th style="padding: 1rem; text-align: left;">Username</th>
-                            <th style="padding: 1rem; text-align: left;">Status</th>
-                            <th style="padding: 1rem; text-align: left;">Role</th>
-                            <th style="padding: 1rem; text-align: left;">Actions</th>
+                        <tr>
+                            <th>Username</th>
+                            <th>Status</th>
+                            <th>Role</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% users.forEach(user => { %>
-                            <tr style="border-bottom: 1px solid #e2e8f0;">
-                                <td style="padding: 1rem;"><%= user.username %></td>
-                                <td style="padding: 1rem;">
-                                    <span style="padding: 0.3rem 0.8rem; border-radius: 20px; background: 
-                                        <%= user.status === 'active' ? '#10b98120' : 
-                                           user.status === 'suspended' ? '#f59e0b20' : 
-                                           '#ef444420' %>;
-                                        color: 
-                                        <%= user.status === 'active' ? '#10b981' : 
-                                           user.status === 'suspended' ? '#f59e0b' : 
-                                           '#ef4444' %>;
-                                    ">
+                            <tr>
+                                <td><%= user.username %></td>
+                                <td>
+                                    <span class="user-status 
+                                        <%= user.status === 'active' ? 'status-active' : 
+                                           user.status === 'suspended' ? 'status-suspended' : 
+                                           'status-banned' %>">
                                         <%= user.status.charAt(0).toUpperCase() + user.status.slice(1) %>
                                     </span>
                                 </td>
-                                <td style="padding: 1rem;">
+                                <td>
                                     <% if (user.isAdmin) { %>
-                                        <span style="padding: 0.3rem 0.8rem; border-radius: 20px; background: #6366f120; color: #6366f1;">
-                                            <i class="fas fa-shield-alt"></i> Admin
-                                        </span>
+                                        <span class="admin-badge">Admin</span>
                                     <% } else { %>
                                         Member
                                     <% } %>
                                 </td>
-                                <td style="padding: 1rem;">
-                                    <div style="display: flex; gap: 0.5rem;">
+                                <td>
+                                    <div class="action-buttons">
                                         <% if (user.status === 'active') { %>
-                                            <a href="/admin/suspend-user/<%= user._id %>" style="padding: 0.5rem; background: #f59e0b20; color: #f59e0b; border-radius: 6px;">
+                                            <button class="action-button suspend-btn" onclick="location.href='/admin/suspend-user/<%= user._id %>'">
                                                 <i class="fas fa-pause"></i> Suspend
-                                            </a>
-                                            <a href="/admin/ban-user/<%= user._id %>" style="padding: 0.5rem; background: #ef444420; color: #ef4444; border-radius: 6px;">
+                                            </button>
+                                            <button class="action-button ban-btn" onclick="location.href='/admin/ban-user/<%= user._id %>'">
                                                 <i class="fas fa-ban"></i> Ban
-                                            </a>
+                                            </button>
                                         <% } else if (user.status === 'suspended') { %>
-                                            <a href="/admin/unsuspend-user/<%= user._id %>" style="padding: 0.5rem; background: #10b98120; color: #10b981; border-radius: 6px;">
-                                                <i class="fas fa-play"></i> Unsuspend
-                                            </a>
-                                            <a href="/admin/ban-user/<%= user._id %>" style="padding: 0.5rem; background: #ef444420; color: #ef4444; border-radius: 6px;">
+                                            <button class="action-button activate-btn" onclick="location.href='/admin/unsuspend-user/<%= user._id %>'">
+                                                <i class="fas fa-play"></i> Activate
+                                            </button>
+                                            <button class="action-button ban-btn" onclick="location.href='/admin/ban-user/<%= user._id %>'">
                                                 <i class="fas fa-ban"></i> Ban
-                                            </a>
+                                            </button>
                                         <% } else { %>
-                                            <a href="/admin/unban-user/<%= user._id %>" style="padding: 0.5rem; background: #10b98120; color: #10b981; border-radius: 6px;">
+                                            <button class="action-button activate-btn" onclick="location.href='/admin/unban-user/<%= user._id %>'">
                                                 <i class="fas fa-user-check"></i> Unban
-                                            </a>
+                                            </button>
                                         <% } %>
                                         
                                         <% if (!user.isAdmin) { %>
-                                            <a href="/admin/promote-user/<%= user._id %>" style="padding: 0.5rem; background: #6366f120; color: #6366f1; border-radius: 6px;">
+                                            <button class="action-button promote-btn" onclick="location.href='/admin/promote-user/<%= user._id %>'">
                                                 <i class="fas fa-shield-alt"></i> Promote
-                                            </a>
+                                            </button>
                                         <% } %>
                                         
-                                        <a href="/admin/delete-user/<%= user._id %>" style="padding: 0.5rem; background: #ef444420; color: #ef4444; border-radius: 6px;">
+                                        <button class="action-button delete-btn" onclick="location.href='/admin/delete-user/<%= user._id %>'">
                                             <i class="fas fa-trash"></i> Delete
-                                        </a>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
