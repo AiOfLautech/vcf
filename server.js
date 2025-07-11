@@ -12,6 +12,7 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
+const MongoStore = require('connect-mongo');
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URL || 'mongodb+srv://hephzibarsamuel:sHFaJEdlFlDCaQwb@contact-gain.cbtkalw.mongodb.net/?retryWrites=true&w=majority&appName=Contact-Gain', {
@@ -34,7 +35,7 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production', 
     maxAge: 24 * 60 * 60 * 1000 
   },
-  store: require('connect-mongo').create({ 
+  store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URL,
     ttl: 24 * 60 * 60 
   })
@@ -182,7 +183,7 @@ io.on('connection', (socket) => {
       await group.save();
     }
     
-    socket.emit('user-status', { userId, online: true });
+    socket.broadcast.emit('user-status', { userId, online: true });
   });
 
   socket.on('chat-message', async (data) => {
@@ -236,7 +237,20 @@ io.on('connection', (socket) => {
         gpt: 'https://apis.davidcyriltech.my.id/ai/chatbot?query=',
         llama: 'https://apis.davidcyriltech.my.id/ai/llama3?text=',
         gemini: 'https://api.giftedtech.web.id/api/ai/geminiai?apikey=gifted&q=',
-        // Add other models
+        deepseek: 'https://apis.davidcyriltech.my.id/ai/deepseek-v3?text=',
+        metaai: 'https://apis.davidcyriltech.my.id/ai/metaai?text=',
+        claude: 'https://apis.davidcyriltech.my.id/ai/claudeSonnet?text=',
+        uncensor: 'https://apis.davidcyriltech.my.id/ai/uncensor?text=',
+        pixtral: 'https://apis.davidcyriltech.my.id/ai/pixtral?text=',
+        gemma: 'https://apis.davidcyriltech.my.id/ai/gemma?text=',
+        qvq: 'https://apis.davidcyriltech.my.id/ai/qvq?text=',
+        qwen: 'https://apis.davidcyriltech.my.id/ai/qwen2Coder?text=',
+        gpt4: 'https://api.giftedtech.web.id/api/ai/gpt4?text=',
+        gptturbo: 'https://api.giftedtech.web.id/api/ai/gpt-turbo?apikey=gifted&q=',
+        letmegpt: 'https://api.giftedtech.web.id/api/ai/letmegpt?apikey=gifted&query=',
+        simsimi: 'https://api.giftedtech.web.id/api/ai/simsimi?apikey=gifted&query=',
+        luminai: 'https://api.giftedtech.web.id/api/ai/luminai?apikey=gifted&query=',
+        wwdgpt: 'https://api.giftedtech.web.id/api/ai/wwdgpt?apikey=gifted&prompt='
       };
       
       const apiUrl = modelMap[data.model] + encodeURIComponent(data.query);
@@ -244,8 +258,9 @@ io.on('connection', (socket) => {
       
       let aiResponse = '';
       if (data.model === 'gpt') aiResponse = response.data.result;
-      else if (data.model === 'gemini') aiResponse = response.data.result;
-      else aiResponse = response.data.response || response.data.message;
+      else if (data.model === 'gemini' || data.model === 'gptturbo') aiResponse = response.data.result;
+      else if (data.model === 'gpt4') aiResponse = response.data.message;
+      else aiResponse = response.data.response || response.data.message || response.data.result;
       
       // Format response
       const formattedResponse = formatAIResponse(aiResponse, data.model);
@@ -270,6 +285,79 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('delete-message', async (data) => {
+    try {
+      const message = await Message.findById(data.messageId);
+      if (!message) return;
+      
+      const user = await User.findById(data.userId);
+      const isOwner = message.userId.toString() === data.userId;
+      const isAdmin = user && user.isAdmin;
+      
+      if (isOwner || isAdmin) {
+        message.deleted = true;
+        message.deletedBy = isAdmin && !isOwner ? data.userId : null;
+        await message.save();
+        
+        io.emit('message-deleted', {
+          messageId: data.messageId,
+          deletedByAdmin: isAdmin && !isOwner
+        });
+      }
+    } catch (err) {
+      console.error('Error deleting message:', err);
+    }
+  });
+
+  socket.on('edit-message', async (data) => {
+    try {
+      const message = await Message.findById(data.messageId);
+      if (!message) return;
+      
+      if (message.userId.toString() === data.userId) {
+        message.content = data.newContent;
+        message.edited = true;
+        await message.save();
+        
+        io.emit('message-edited', {
+          messageId: data.messageId,
+          newContent: data.newContent
+        });
+      }
+    } catch (err) {
+      console.error('Error editing message:', err);
+    }
+  });
+
+  socket.on('reply-message', async (data) => {
+    try {
+      const message = await Message.findById(data.messageId);
+      if (!message) return;
+      
+      const user = await User.findById(data.userId);
+      if (!user) return;
+      
+      message.replies.push({
+        userId: data.userId,
+        content: data.content
+      });
+      
+      await message.save();
+      
+      io.emit('message-replied', {
+        messageId: data.messageId,
+        reply: {
+          userId: data.userId,
+          username: user.username,
+          content: data.content,
+          createdAt: new Date()
+        }
+      });
+    } catch (err) {
+      console.error('Error replying to message:', err);
+    }
+  });
+
   socket.on('disconnect', async () => {
     console.log('User disconnected');
     if (socket.userId) {
@@ -281,13 +369,34 @@ io.on('connection', (socket) => {
 
 function formatAIResponse(response, model) {
   const now = new Date();
+  const uptime = process.uptime();
+  const days = Math.floor(uptime / 86400);
+  const hours = Math.floor(uptime % 86400 / 3600);
+  const minutes = Math.floor(uptime % 3600 / 60);
+  
   return `
     <div class="ai-response">
       <div class="ai-header">
         <i class="fas fa-robot"></i>
         <span>AI Assistant (${model.toUpperCase()}) - Powered by Contact Gain</span>
       </div>
-      <div class="ai-content">${response}</div>
+      <div class="ai-content">
+        <pre style="background:#1a1f2d;color:#fff;padding:15px;border-radius:8px;font-family:monospace">
+╭══〘〘 𝙶𝙾𝙳/𝚂 𝚉𝙴𝙰𝙻 〙〙═⊷
+┃❍ Pʀᴇғɪx:   / 
+┃❍ ᴏᴡɴᴇʀ:  @𝙰i𝙾f𝙻autech
+┃❍ Pʟᴜɢɪɴs:  𝟐𝟓
+┃❍ Vᴇʀsɪᴏɴ:  𝟐.𝟎.𝟎
+┃❍ Uᴘᴛɪᴍᴇ:  ${days}d ${hours}h ${minutes}m
+┃❍ Tɪᴍᴇ Nᴏᴡ:  ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+┃❍ Dᴀᴛᴇ Tᴏᴅᴀʏ:  ${now.toLocaleDateString()}
+┃❍ Tɪᴍᴇ Zᴏɴᴇ:  Africa/Lagos
+┃❍ Sᴇʀᴠᴇʀ Rᴀᴍ:  𝟕𝟒.𝟖𝟏 𝙶𝙱/𝟏𝟐𝟓.𝟕𝟕 𝙶𝙱
+╰═════════════════⊷
+
+${response}
+        </pre>
+      </div>
       <div class="ai-footer">
         <span>Response generated at ${now.toLocaleTimeString()}</span>
       </div>
@@ -363,10 +472,17 @@ app.get('/admin', isAdmin, async (req, res) => {
     const totalSessions = await Session.countDocuments();
     const activeSessions = await Session.countDocuments({ status: 'active' });
     const totalDownloads = await Download.countDocuments();
+    const suspendedUsers = await User.countDocuments({ status: 'suspended' });
     const users = await User.find();
 
     res.render('admin', {
-      stats: { totalUsers, totalSessions, activeSessions, totalDownloads },
+      stats: { 
+        totalUsers, 
+        totalSessions, 
+        activeSessions, 
+        totalDownloads,
+        suspendedUsers
+      },
       users
     });
   } catch (err) {
@@ -456,10 +572,13 @@ app.get('/logout', (req, res) => {
   req.logout(() => res.redirect('/'));
 });
 
+app.get('/admin/login', (req, res) => {
+  res.render('admin-login', { error: req.query.error });
+});
+
 app.post('/admin/login', (req, res) => {
   if (req.body.username === process.env.ADMIN_USERNAME && 
       req.body.password === process.env.ADMIN_PASSWORD) {
-    // Set admin session
     req.session.isAdmin = true;
     res.redirect('/admin');
   } else {
@@ -488,6 +607,88 @@ app.post('/create-session', isAuthenticated, async (req, res) => {
   } catch (err) {
     console.error('Session creation error:', err);
     res.status(500).json({ error: 'Failed to create session' });
+  }
+});
+
+app.post('/session/:sessionId/contact', async (req, res) => {
+  const { name, phone } = req.body;
+  const { sessionId } = req.params;
+
+  if (!name || !phone) {
+    return res.status(400).json({ error: 'Name and phone are required.' });
+  }
+
+  try {
+    const sessionData = await Session.findOne({ sessionId });
+    if (!sessionData) {
+      return res.status(404).json({ error: 'Session not found.' });
+    }
+
+    if (Date.now() > sessionData.expiresAt) {
+      sessionData.status = 'expired';
+      await sessionData.save();
+      return res.status(400).json({ error: 'Session has ended.' });
+    }
+
+    const contact = new Contact({ sessionId, name, phone });
+    await contact.save();
+
+    sessionData.contactCount += 1;
+    await sessionData.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Contact error:', err);
+    res.status(500).json({ error: 'Failed to add contact.' });
+  }
+});
+
+app.get('/session/:sessionId/download', async (req, res) => {
+  const { sessionId } = req.params;
+
+  try {
+    const sessionData = await Session.findOne({ sessionId });
+    if (!sessionData) {
+      return res.status(404).send('Session not found.');
+    }
+
+    sessionData.downloadCount += 1;
+    await sessionData.save();
+
+    const contacts = await Contact.find({ sessionId });
+    let vcfData = '';
+
+    contacts.forEach(contact => {
+      vcfData += `BEGIN:VCARD
+VERSION:3.0
+FN:${contact.name}
+TEL;TYPE=CELL:${contact.phone}
+END:VCARD
+`;
+    });
+
+    const fileName = `${sessionData.groupName.replace(/[^a-z0-9]/gi, '_')}_${sessionId}.vcf`;
+
+    const download = new Download({
+      sessionId,
+      status: 'success'
+    });
+    await download.save();
+
+    res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(vcfData || 'No contacts were added.');
+  } catch (err) {
+    console.error('Download error:', err);
+
+    const download = new Download({
+      sessionId,
+      status: 'failed',
+      error: err.message
+    });
+    await download.save();
+
+    res.status(500).send('Internal server error.');
   }
 });
 
@@ -528,6 +729,21 @@ app.post('/admin/unban-user/:userId', isAdmin, async (req, res) => {
     res.redirect('/admin');
   } catch (err) {
     console.error('Unban user error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// Delete Session from Terminal
+app.post('/delete-session/:sessionId', isAuthenticated, async (req, res) => {
+  try {
+    const session = await Session.findOne({ sessionId: req.params.sessionId, userId: req.user._id });
+    if (!session) {
+      return res.status(404).send('Session not found');
+    }
+    await session.deleteOne();
+    res.redirect('/terminal');
+  } catch (err) {
+    console.error('Delete session error:', err);
     res.status(500).send('Internal server error');
   }
 });
