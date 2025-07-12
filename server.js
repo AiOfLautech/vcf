@@ -392,7 +392,7 @@ app.get('/admin', isAdmin, async (req, res) => {
   }
 });
 
-app.get('/CHAT', isAuthenticated, async (req, res) => {
+app.get('/chat', isAuthenticated, async (req, res) => {
   try {
     const group = await Group.findOne({ name: 'Initial Group' });
     if (!group) {
@@ -413,7 +413,7 @@ app.get('/CHAT', isAuthenticated, async (req, res) => {
 
     const onlineUsers = await User.find({ lastSeen: { $gt: Date.now() - 300000 } });
 
-    res.render('CHAT', {
+    res.render('chat', {
       user: req.user,
       group,
       messages: messages.reverse(),
