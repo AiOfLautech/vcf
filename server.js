@@ -397,7 +397,7 @@ app.get('/chat', isAuthenticated, async (req, res) => {
     const group = await Group.findOne({ name: 'Initial Group' });
     if (!group) {
       await createDefaultGroup();
-      return res.redirect('/CHAT');
+      return res.redirect('/chat');
     }
 
     if (!group.members.includes(req.user._id)) {
@@ -445,6 +445,28 @@ app.get('/profile/:userId', isAuthenticated, async (req, res) => {
     res.render('profile', { currentUser: req.user, profileUser });
   } catch (err) {
     console.error('Profile error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+app.get('/edit-profile', isAuthenticated, async (req, res) => {
+  try {
+    res.render('edit-profile', { user: req.user });
+  } catch (err) {
+    console.error('Edit profile error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+app.post('/edit-profile', isAuthenticated, async (req, res) => {
+  try {
+    const { name, phone, bio, profilePic } = req.body;
+    await User.findByIdAndUpdate(req.user._id, {
+      profile: { name, phone, bio, profilePic }
+    });
+    res.redirect('/profile/' + req.user._id);
+  } catch (err) {
+    console.error('Profile update error:', err);
     res.status(500).send('Internal server error');
   }
 });
