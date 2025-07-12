@@ -386,7 +386,7 @@
         
         // Remove dropdown when clicking elsewhere
         document.addEventListener('click', (e) => {
-          if (!dropdown.contains(e.target) {
+          if (!dropdown.contains(e.target)) {
             dropdown.remove();
           }
         }, { once: true });
