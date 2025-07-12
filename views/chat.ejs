@@ -581,6 +581,10 @@
             <i class="fas fa-users"></i>
           <% } %>
         </div>
+<!-- Add this inside the chat-header div -->
+<div class="chat-action-btn" id="groupInfoBtn" onclick="window.location.href='/group/<%= group._id %>'">
+  <i class="fas fa-info-circle"></i>
+</div>
         <div class="group-info">
           <div class="group-name"><%= group.name %></div>
           <div class="group-status">
