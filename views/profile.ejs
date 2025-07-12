@@ -20,18 +20,21 @@
       --card-bg: #ffffff;
       --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
       font-family: 'Inter', sans-serif;
     }
+
     body {
       background-color: #f1f5f9;
       color: #334155;
       min-height: 100vh;
       padding: 2rem;
     }
+
     .profile-container {
       max-width: 800px;
       margin: 0 auto;
@@ -40,12 +43,14 @@
       overflow: hidden;
       box-shadow: var(--card-shadow);
     }
+
     .profile-header {
       background: linear-gradient(135deg, var(--primary), var(--primary-light));
       padding: 3rem 2rem 2rem;
       text-align: center;
       position: relative;
     }
+
     .profile-avatar {
       width: 120px;
       height: 120px;
@@ -59,14 +64,15 @@
       color: var(--primary);
       position: relative;
       border: 5px solid white;
-      cursor: pointer;
     }
+
     .profile-avatar img {
       width: 100%;
       height: 100%;
       border-radius: 50%;
       object-fit: cover;
     }
+
     .online-status {
       position: absolute;
       bottom: 10px;
@@ -77,17 +83,20 @@
       border-radius: 50%;
       border: 3px solid white;
     }
+
     .profile-name {
       font-size: 1.8rem;
       font-weight: 700;
       color: white;
       margin-bottom: 0.5rem;
     }
+
     .profile-username {
       font-size: 1.2rem;
       color: rgba(255, 255, 255, 0.8);
       margin-bottom: 1rem;
     }
+
     .admin-badge {
       display: inline-block;
       background: var(--info);
@@ -98,12 +107,14 @@
       font-weight: 500;
       margin-bottom: 1.5rem;
     }
+
     .profile-actions {
       display: flex;
       justify-content: center;
       gap: 1rem;
       margin-top: 1.5rem;
     }
+
     .profile-btn {
       padding: 0.8rem 1.5rem;
       border-radius: 30px;
@@ -114,25 +125,31 @@
       cursor: pointer;
       transition: all 0.3s ease;
     }
+
     .message-btn {
       background: white;
       color: var(--primary);
       border: none;
     }
+
     .message-btn:hover {
       background: rgba(255, 255, 255, 0.9);
     }
-    .edit-btn, .more-btn {
+
+    .more-btn {
       background: rgba(255, 255, 255, 0.2);
       color: white;
       border: none;
     }
-    .edit-btn:hover, .more-btn:hover {
+
+    .more-btn:hover {
       background: rgba(255, 255, 255, 0.3);
     }
+
     .profile-body {
       padding: 2rem;
     }
+
     .section-title {
       font-size: 1.3rem;
       font-weight: 600;
@@ -140,88 +157,79 @@
       padding-bottom: 0.5rem;
       border-bottom: 1px solid #e2e8f0;
     }
+
     .profile-details {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 1.5rem;
       margin-bottom: 2rem;
     }
+
     .detail-item {
       background: #f8fafc;
       border-radius: 12px;
       padding: 1.5rem;
     }
+
     .detail-label {
       font-size: 0.9rem;
       color: var(--gray);
       margin-bottom: 0.5rem;
     }
+
     .detail-value {
       font-size: 1.1rem;
       font-weight: 500;
     }
+
     .bio-content {
       background: #f8fafc;
       border-radius: 12px;
       padding: 1.5rem;
       line-height: 1.6;
     }
+
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 1rem;
       margin-top: 2rem;
     }
+
     .stat-card {
       background: #f8fafc;
       border-radius: 12px;
       padding: 1.5rem;
       text-align: center;
     }
+
     .stat-value {
       font-size: 1.8rem;
       font-weight: 700;
       color: var(--primary);
       margin-bottom: 0.5rem;
     }
+
     .stat-label {
       font-size: 0.9rem;
       color: var(--gray);
     }
-    .edit-form {
-      display: none;
-      margin-top: 1rem;
-    }
-    .edit-form input, .edit-form textarea {
-      width: 100%;
-      padding: 0.8rem;
-      margin-bottom: 1rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-    }
-    .edit-form button {
-      padding: 0.8rem 1.5rem;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .edit-form button:hover {
-      background: var(--primary-light);
-    }
+
     @media (max-width: 768px) {
       .profile-header {
         padding: 2rem 1rem 1.5rem;
       }
+      
       .profile-avatar {
         width: 100px;
         height: 100px;
         font-size: 2.5rem;
       }
+      
       .profile-name {
         font-size: 1.5rem;
       }
+      
       .profile-username {
         font-size: 1rem;
       }
@@ -231,52 +239,56 @@
 <body>
   <div class="profile-container">
     <div class="profile-header">
-      <div class="profile-avatar" onclick="<% if (profileUser._id.toString() === user._id.toString()) { %>document.getElementById('profilePicInput').click()<% } %>">
+      <div class="profile-avatar">
         <% if (profileUser.profile && profileUser.profile.profilePic) { %>
           <img src="<%= profileUser.profile.profilePic %>" alt="Profile">
         <% } else { %>
           <%= profileUser.username.charAt(0).toUpperCase() %>
         <% } %>
-        <% if (onlineUsers.includes(profileUser._id.toString())) { %>
+        <% if (profileUser.lastSeen > Date.now() - 300000) { %>
           <div class="online-status"></div>
         <% } %>
       </div>
+      
       <div class="profile-name">
         <%= profileUser.profile?.name || profileUser.username %>
         <% if (profileUser.isAdmin) { %>
-          <span class="admin-badge"><i class="fas fa-check-circle"></i> Admin</span>
+          <span class="admin-badge">
+            <i class="fas fa-check-circle"></i> Admin
+          </span>
         <% } %>
       </div>
-      <div class="profile-username">@<%= profileUser.username %></div>
+      
+      <div class="profile-username">
+        @<%= profileUser.username %>
+      </div>
+      
       <div class="profile-actions">
-        <% if (profileUser._id.toString() !== user._id.toString()) { %>
-          <div class="profile-btn message-btn" onclick="window.location.href='/private-chat/<%= profileUser._id %>'">
-            <i class="fas fa-envelope"></i> Message
-          </div>
-        <% } %>
-        <% if (profileUser._id.toString() === user._id.toString()) { %>
-          <div class="profile-btn edit-btn" onclick="toggleEditForm()">
-            <i class="fas fa-edit"></i> Edit Profile
-          </div>
-        <% } %>
-        <% if (user.isAdmin && user._id.toString() !== profileUser._id.toString()) { %>
-          <div class="profile-btn more-btn" onclick="alert('Admin actions available in dashboard')">
+        <div class="profile-btn message-btn" id="messageBtn">
+          <i class="fas fa-envelope"></i> Message
+        </div>
+        <% if (currentUser.isAdmin && currentUser._id.toString() !== profileUser._id.toString()) { %>
+          <div class="profile-btn more-btn" id="adminActions">
             <i class="fas fa-cog"></i> Admin Actions
           </div>
         <% } %>
       </div>
     </div>
+    
     <div class="profile-body">
       <div class="section-title">Profile Information</div>
+      
       <div class="profile-details">
         <div class="detail-item">
           <div class="detail-label">Full Name</div>
           <div class="detail-value"><%= profileUser.profile?.name || 'Not provided' %></div>
         </div>
+        
         <div class="detail-item">
           <div class="detail-label">Phone Number</div>
           <div class="detail-value"><%= profileUser.profile?.phone || 'Not provided' %></div>
         </div>
+        
         <div class="detail-item">
           <div class="detail-label">Status</div>
           <div class="detail-value">
@@ -285,51 +297,100 @@
             </span>
           </div>
         </div>
+        
         <div class="detail-item">
           <div class="detail-label">Member Since</div>
           <div class="detail-value"><%= new Date(profileUser.createdAt).toLocaleDateString() %></div>
         </div>
       </div>
+      
       <div class="section-title">Bio</div>
-      <div class="bio-content"><%= profileUser.profile?.bio || 'No bio provided' %></div>
-      <% if (profileUser._id.toString() === user._id.toString()) { %>
-        <div class="edit-form" id="editForm">
-          <form action="/update-profile" method="POST">
-            <input type="text" name="name" placeholder="Full Name" value="<%= profileUser.profile?.name || '' %>">
-            <input type="tel" name="phone" placeholder="Phone Number" value="<%= profileUser.profile?.phone || '' %>">
-            <textarea name="bio" placeholder="Bio"><%= profileUser.profile?.bio || '' %></textarea>
-            <button type="submit">Save Changes</button>
-          </form>
-          <form id="uploadProfilePicForm" action="/upload-profile-pic" method="POST" enctype="multipart/form-data" style="display: none;">
-            <input type="file" id="profilePicInput" name="profilePic" accept="image/*" onchange="this.form.submit()">
-          </form>
-        </div>
-      <% } %>
+      <div class="bio-content">
+        <%= profileUser.profile?.bio || 'No bio provided' %>
+      </div>
+      
       <div class="section-title">Statistics</div>
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-value"><%= stats?.sessions || 0 %></div>
+          <div class="stat-value">24</div>
           <div class="stat-label">Sessions</div>
         </div>
+        
         <div class="stat-card">
-          <div class="stat-value"><%= stats?.contacts || 0 %></div>
+          <div class="stat-value">312</div>
           <div class="stat-label">Contacts</div>
         </div>
+        
         <div class="stat-card">
-          <div class="stat-value"><%= stats?.downloads || 0 %></div>
+          <div class="stat-value">78</div>
           <div class="stat-label">Downloads</div>
         </div>
+        
         <div class="stat-card">
-          <div class="stat-value"><%= stats?.messages || 0 %></div>
+          <div class="stat-value">1.2k</div>
           <div class="stat-label">Messages</div>
         </div>
       </div>
     </div>
   </div>
+
   <script>
-    function toggleEditForm() {
-      const form = document.getElementById('editForm');
-      form.style.display = form.style.display === 'block' ? 'none' : 'block';
+    document.getElementById('messageBtn').addEventListener('click', () => {
+      window.location.href = `/private-chat/<%= profileUser._id %>`;
+    });
+    
+    // Admin actions dropdown
+    const adminActions = document.getElementById('adminActions');
+    if (adminActions) {
+      adminActions.addEventListener('click', () => {
+        const actions = [
+          { 
+            label: profileUser.status === 'suspended' ? 'Unsuspend User' : 'Suspend User', 
+            action: `/admin/${profileUser.status === 'suspended' ? 'unsuspend' : 'suspend'}-user/<%= profileUser._id %>` 
+          },
+          { 
+            label: profileUser.status === 'banned' ? 'Unban User' : 'Ban User', 
+            action: `/admin/${profileUser.status === 'banned' ? 'unban' : 'ban'}-user/<%= profileUser._id %>` 
+          },
+          { 
+            label: profileUser.isAdmin ? 'Demote from Admin' : 'Promote to Admin', 
+            action: `/admin/${profileUser.isAdmin ? 'demote' : 'promote'}-user/<%= profileUser._id %>` 
+          }
+        ];
+        
+        let dropdown = document.createElement('div');
+        dropdown.style.position = 'absolute';
+        dropdown.style.backgroundColor = 'white';
+        dropdown.style.borderRadius = '8px';
+        dropdown.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+        dropdown.style.padding = '0.5rem';
+        dropdown.style.zIndex = '100';
+        
+        actions.forEach(action => {
+          const actionLink = document.createElement('a');
+          actionLink.href = action.action;
+          actionLink.style.display = 'block';
+          actionLink.style.padding = '0.5rem 1rem';
+          actionLink.style.color = 'var(--dark)';
+          actionLink.style.textDecoration = 'none';
+          actionLink.textContent = action.label;
+          dropdown.appendChild(actionLink);
+        });
+        
+        adminActions.parentNode.appendChild(dropdown);
+        
+        // Position dropdown
+        const rect = adminActions.getBoundingClientRect();
+        dropdown.style.top = `${rect.bottom + window.scrollY}px`;
+        dropdown.style.left = `${rect.left + window.scrollX}px`;
+        
+        // Remove dropdown when clicking elsewhere
+        document.addEventListener('click', (e) => {
+          if (!dropdown.contains(e.target) {
+            dropdown.remove();
+          }
+        }, { once: true });
+      });
     }
   </script>
 </body>
