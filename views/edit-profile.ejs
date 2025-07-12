@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Profile | Contact Gain</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      padding: 2rem;
+    }
+    .edit-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+    }
+    textarea {
+      resize: vertical;
+    }
+    button {
+      background: #6366f1;
+      color: white;
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #818cf8;
+    }
+  </style>
+</head>
+<body>
+  <div class="edit-container">
+    <h2>Edit Profile</h2>
+    <form action="/edit-profile" method="POST">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" value="<%= user.profile?.name || '' %>">
+      </div>
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input type="text" id="phone" name="phone" value="<%= user.profile?.phone || '' %>">
+      </div>
+      <div class="form-group">
+        <label for="bio">Bio</label>
+        <textarea id="bio" name="bio" rows="4"><%= user.profile?.bio || '' %></textarea>
+      </div>
+      <div class="form-group">
+        <label for="profilePic">Profile Picture URL</label>
+        <input type="text" id="profilePic" name="profilePic" value="<%= user.profile?.profilePic || '' %>">
+      </div>
+      <button type="submit">Save Changes</button>
+    </form>
+  </div>
+</body>
+</html>
