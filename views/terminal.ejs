@@ -39,6 +39,7 @@
       min-height: 100vh;
     }
 
+    /* Sidebar Styles */
     .sidebar {
       width: 260px;
       background: var(--dark);
@@ -177,6 +178,7 @@
       background: rgba(99, 102, 241, 0.25);
     }
 
+    /* Main Content Styles */
     .main-content {
       flex-grow: 1;
       padding: 2rem;
@@ -276,6 +278,7 @@
       color: var(--primary);
     }
 
+    /* Sessions Section */
     .sessions-header {
       display: flex;
       justify-content: space-between;
@@ -425,6 +428,7 @@
       background: rgba(16, 185, 129, 0.2);
     }
 
+    /* Responsive Styles */
     @media (max-width: 1200px) {
       .sessions-grid {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -480,6 +484,7 @@
 </head>
 <body>
   <div class="dashboard-container">
+    <!-- Sidebar -->
     <div class="sidebar">
       <div class="logo">
         <i class="fas fa-bolt"></i>
@@ -488,7 +493,7 @@
         </div>
       </div>
       <div class="nav-links">
-        <a href="/terminal" class="nav-link active"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="#" class="nav-link active"><i class="fas fa-chart-line"></i> Dashboard</a>
         <a href="/chat" class="nav-link"><i class="fas fa-comments"></i> Community Chat</a>
         <a href="#" class="nav-link"><i class="fas fa-users"></i> Sessions</a>
         <a href="#" class="nav-link"><i class="fas fa-file-contract"></i> Contacts</a>
@@ -514,6 +519,7 @@
       </div>
     </div>
 
+    <!-- Main Content -->
     <div class="main-content">
       <div class="header">
         <h1>Dashboard Overview</h1>
@@ -522,6 +528,7 @@
         </button>
       </div>
 
+      <!-- Stats Grid -->
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-header">
@@ -576,6 +583,7 @@
         </div>
       </div>
 
+      <!-- Active Sessions -->
       <div class="sessions-section">
         <div class="sessions-header">
           <div class="section-title">Your Active Sessions</div>
