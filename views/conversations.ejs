@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conversations | Contact Gain</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --secondary: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --info: #0ea5e9;
+      --dark: #1e293b;
+      --light: #f8fafc;
+      --gray: #94a3b8;
+      --card-bg: #ffffff;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background-color: #f1f5f9;
+      color: #334155;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .conversations-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .conversations-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .conversation-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .conversation-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .conversation-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .conversation-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .online-status {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      width: 12px;
+      height: 12px;
+      background: var(--secondary);
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+
+    .conversation-info {
+      flex-grow: 1;
+    }
+
+    .conversation-name {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .conversation-preview {
+      font-size: 0.9rem;
+      color: var(--gray);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 500px;
+    }
+
+    .conversation-time {
+      font-size: 0.8rem;
+      color: var(--gray);
+      text-align: right;
+      min-width: 70px;
+    }
+
+    .no-conversations {
+      text-align: center;
+      padding: 3rem;
+      color: var(--gray);
+    }
+
+    @media (max-width: 768px) {
+      .conversation-card {
+        padding: 1rem;
+        gap: 1rem;
+      }
+      
+      .conversation-avatar {
+        width: 50px;
+        height: 50px;
+      }
+      
+      .conversation-preview {
+        max-width: 250px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="conversations-container">
+    <div class="header">
+      <h1>Your Conversations</h1>
+    </div>
+    
+    <div class="conversations-list">
+      <% if (conversations.length === 0) { %>
+        <div class="no-conversations">
+          <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+          <h2>No conversations yet</h2>
+          <p>Start a new conversation by visiting someone's profile</p>
+        </div>
+      <% } else { %>
+        <% conversations.forEach(conversation => { %>
+          <% 
+            // Find the other participant
+            const otherParticipant = conversation.participants.find(
+              p => p._id.toString() !== user._id.toString()
+            );
+          %>
+          <a href="/private-chat/<%= otherParticipant._id %>" class="conversation-card">
+            <div class="conversation-avatar">
+              <% if (otherParticipant.profile && otherParticipant.profile.profilePic) { %>
+                <img src="<%= otherParticipant.profile.profilePic %>" alt="Profile">
+              <% } else { %>
+                <%= otherParticipant.username.charAt(0).toUpperCase() %>
+              <% } %>
+              <% if (otherParticipant.lastSeen > Date.now() - 300000) { %>
+                <div class="online-status"></div>
+              <% } %>
+            </div>
+            <div class="conversation-info">
+              <div class="conversation-name"><%= otherParticipant.profile?.name || otherParticipant.username %></div>
+              <div class="conversation-preview">
+                <% if (conversation.lastMessage) { %>
+                  <% if (conversation.lastMessage.userId._id.toString() === user._id.toString()) { %>
+                    You: 
+                  <% } %>
+                  <%= conversation.lastMessage.content %>
+                <% } else { %>
+                  Start a conversation...
+                <% } %>
+              </div>
+            </div>
+            <div class="conversation-time">
+              <% if (conversation.lastMessage) { %>
+                <%= new Date(conversation.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %>
+              <% } %>
+            </div>
+          </a>
+        <% }); %>
+      <% } %>
+    </div>
+  </div>
+</body>
+</html>
