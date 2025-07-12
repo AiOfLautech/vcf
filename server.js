@@ -457,7 +457,7 @@ app.post('/admin/suspend-user/:userId', isAdmin, async (req, res) => {
     res.redirect('/admin');
   } catch (err) {
     console.error('Suspend user error:', err);
-    res.status(500).send	parseInt('Internal server error');
+    res.status(500).send('Internal server error');
   }
 });
 
@@ -526,6 +526,29 @@ app.get('/logout', (req, res) => {
     if (err) console.error('Logout error:', err);
     res.redirect('/');
   });
+});
+
+// AI API Integration Route
+app.post('/ai/generate', isAuthenticated, async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: 'Prompt is required.' });
+
+    // Example AI API call (replace with actual API endpoint)
+    const aiResponse = await axios.post('https://api.example.com/generate', {
+      prompt: prompt,
+      max_tokens: 150
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.AI_API_KEY}`
+      }
+    });
+
+    res.json({ response: aiResponse.data.text });
+  } catch (err) {
+    console.error('AI API error:', err);
+    res.status(500).json({ error: 'Failed to generate response.' });
+  }
 });
 
 // Create Session
