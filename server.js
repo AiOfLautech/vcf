@@ -38,7 +38,8 @@ app.use(session({
   },
   store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URL,
-    ttl: 24 * 60 * 60 
+    ttl: 24 * 60 * 60,
+    collectionName: 'express_sessions'  // Changed to avoid conflict with custom Session model
   })
 }));
 app.use(flash());
@@ -59,7 +60,7 @@ const userSchema = new mongoose.Schema({
     profilePic: { type: String, default: '/images/default-avatar.png' }
   },
   isAdmin: { type: Boolean, default: false },
-  personally: { type: Date, default: Date.now }
+  lastSeen: { type: Date, default: Date.now }
 });
 
 const sessionSchema = new mongoose.Schema({
@@ -67,7 +68,7 @@ const sessionSchema = new mongoose.Schema({
   sessionId: { type: String, unique: true, required: true },
   groupName: { type: String, required: true },
   whatsappLink: { type: String },
-  timer: { type: Number, required: true },  // Corrected: removed 'dawn'
+  timer: { type: Number, required: true },
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true },
   downloadCount: { type: Number, default: 0 },
