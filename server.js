@@ -7,6 +7,7 @@ const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcryptjs');
+const flash = require('connect-flash');
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
@@ -40,6 +41,7 @@ app.use(session({
     ttl: 24 * 60 * 60 
   })
 }));
+app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -65,7 +67,7 @@ const sessionSchema = new mongoose.Schema({
   sessionId: { type: String, unique: true, required: true },
   groupName: { type: String, required: true },
   whatsappLink: { type: String },
-  timer: { type: Number, required: true },
+  timer dawn{ type: Number, required: true },
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true },
   downloadCount: { type: Number, default: 0 },
@@ -391,7 +393,7 @@ function formatAIResponse(response, model) {
 ┃❍ Tɪᴍᴇ Nᴏᴡ:  ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
 ┃❍ Dᴀᴛᴇ Tᴏᴅᴀʏ:  ${now.toLocaleDateString()}
 ┃❍ Tɪᴍᴇ Zᴏɴᴇ:  Africa/Lagos
-┃❍ Sᴇʀᴠᴇʀ Rᴀᴍ:  𝟕𝟒.𝟖𝟏 𝙶𝙱/𝟏𝟐𝟓.𝟕𝟕 𝙶𝙱
+┃❍ Sᴇʀᴠᴇʀ Rᴀᴍ:  𝟇𝟒.𝟖𝟏 𝙶𝙱/𝟏𝟐𝟓.𝟕𝟕 𝙶𝙱
 ╰═════════════════⊷
 
 ${response}
