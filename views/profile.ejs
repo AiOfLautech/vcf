@@ -278,7 +278,7 @@
           <i class="fas fa-envelope"></i> Message
         </div>
         <% if (currentUser._id.toString() === profileUser._id.toString()) { %>
-          <div class="profile-btn edit-btn" id="editBtn">
+          <div class="profile-btn edit-btn" id="editProfileBtn">
             <i class="fas fa-edit"></i> Edit Profile
           </div>
         <% } else if (currentUser.isAdmin) { %>
@@ -350,66 +350,15 @@
 
   <script>
     document.getElementById('messageBtn').addEventListener('click', () => {
-      window.location.href = `/private-chat/<%= profileUser._id %>`;
+      window.location.href = '/private-chat/<%= profileUser._id %>';
     });
 
-    const editBtn = document.getElementById('editBtn');
-    if (editBtn) {
-      editBtn.addEventListener('click', () => {
+    <% if (currentUser._id.toString() === profileUser._id.toString()) { %>
+      document.getElementById('editProfileBtn').addEventListener('click', () => {
+        // Redirect to edit profile page (implement this route separately)
         window.location.href = '/edit-profile';
       });
-    }
-    
-    const adminActions = document.getElementById('adminActions');
-    if (adminActions) {
-      adminActions.addEventListener('click', () => {
-        const actions = [
-          { 
-            label: '<%= profileUser.status === 'suspended' ? 'Unsuspend User' : 'Suspend User' %>', 
-            action: `/admin/<%= profileUser.status === 'suspended' ? 'unsuspend' : 'suspend' %>-user/<%= profileUser._id %>` 
-          },
-          { 
-            label: '<%= profileUser.status === 'banned' ? 'Unban User' : 'Ban User' %>', 
-            action: `/admin/<%= profileUser.status === 'banned' ? 'unban' : 'ban' %>-user/<%= profileUser._id %>` 
-          },
-          { 
-            label: '<%= profileUser.isAdmin ? 'Demote from Admin' : 'Promote to Admin' %>', 
-            action: `/admin/<%= profileUser.isAdmin ? 'demote' : 'promote' %>-user/<%= profileUser._id %>` 
-          }
-        ];
-        
-        let dropdown = document.createElement('div');
-        dropdown.style.position = 'absolute';
-        dropdown.style.backgroundColor = 'white';
-        dropdown.style.borderRadius = '8px';
-        dropdown.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-        dropdown.style.padding = '0.5rem';
-        dropdown.style.zIndex = '100';
-        
-        actions.forEach(action => {
-          const actionLink = document.createElement('a');
-          actionLink.href = action.action;
-          actionLink.style.display = 'block';
-          actionLink.style.padding = '0.5rem 1rem';
-          actionLink.style.color = 'var(--dark)';
-          actionLink.style.textDecoration = 'none';
-          actionLink.textContent = action.label;
-          dropdown.appendChild(actionLink);
-        });
-        
-        adminActions.parentNode.appendChild(dropdown);
-        
-        const rect = adminActions.getBoundingClientRect();
-        dropdown.style.top = `${rect.bottom + window.scrollY}px`;
-        dropdown.style.left = `${rect.left + window.scrollX}px`;
-        
-        document.addEventListener('click', (e) => {
-          if (!dropdown.contains(e.target)) {
-            dropdown.remove();
-          }
-        }, { once: true });
-      });
-    }
+    <% } %>
   </script>
 </body>
 </html>
