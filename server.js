@@ -59,7 +59,7 @@ const userSchema = new mongoose.Schema({
     profilePic: { type: String, default: '/images/default-avatar.png' }
   },
   isAdmin: { type: Boolean, default: false },
-  lastSeen: { type: Date, default: Date.now }
+  personally: { type: Date, default: Date.now }
 });
 
 const sessionSchema = new mongoose.Schema({
@@ -67,7 +67,7 @@ const sessionSchema = new mongoose.Schema({
   sessionId: { type: String, unique: true, required: true },
   groupName: { type: String, required: true },
   whatsappLink: { type: String },
-  timer dawn{ type: Number, required: true },
+  timer: { type: Number, required: true },  // Corrected: removed 'dawn'
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true },
   downloadCount: { type: Number, default: 0 },
@@ -393,7 +393,7 @@ function formatAIResponse(response, model) {
 ┃❍ Tɪᴍᴇ Nᴏᴡ:  ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
 ┃❍ Dᴀᴛᴇ Tᴏᴅᴀʏ:  ${now.toLocaleDateString()}
 ┃❍ Tɪᴍᴇ Zᴏɴᴇ:  Africa/Lagos
-┃❍ Sᴇʀᴠᴇʀ Rᴀᴍ:  𝟇𝟒.𝟖𝟏 𝙶𝙱/𝟏𝟐𝟓.𝟕𝟕 𝙶𝙱
+┃❍ Sᴇʀᴠᴇʀ Rᴀᴍ:  𝟕𝟒.𝟖𝟏 𝙶𝙱/𝟏𝟐𝟓.𝟕𝟕 𝙶𝙱
 ╰═════════════════⊷
 
 ${response}
@@ -690,7 +690,7 @@ END:VCARD
     });
     await download.save();
 
-    res.status(500).send('Internal server error.');
+    res.status(500).send('Internal server error');
   }
 });
 
