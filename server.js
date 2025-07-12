@@ -17,9 +17,7 @@ mongoose.connect(process.env.MONGO_URL || 'mongodb+srv://hephzibarsamuel:sHFaJEd
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-  .then(() => {
-    console.log('MongoDB connected successfully');
-  })
+  .then(() => console.log('MongoDB connected successfully'))
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Middleware
@@ -31,9 +29,9 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'e24c9bf7d58a4c3e9f1a6b8c7d3e2f4981a0b3c4d5e6f7a8b9c0d1e2f3a4b5c6',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: process.env.LINODE_ENV === 'production', 
-    maxAge: 24 * 60 * 60 * 1000 
+  cookie: {
+    secure: process.env.LINODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
 app.use(passport.initialize());
@@ -102,14 +100,21 @@ const groupSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+const conversationSchema = new mongoose.Schema({
+  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  lastMessage: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' },
+  updatedAt: { type: Date, default: Date.now }
+});
+
 const User = mongoose.model('User', userSchema);
 const Session = mongoose.model('Session', sessionSchema);
 const Contact = mongoose.model('Contact', contactSchema);
 const Download = mongoose.model('Download', downloadSchema);
 const Message = mongoose.model('Message', messageSchema);
 const Group = mongoose.model('Group', groupSchema);
+const Conversation = mongoose.model('Conversation', conversationSchema);
 
-// Create default group
+// Create Default Group
 async function createDefaultGroup() {
   const group = await Group.findOne({ name: 'Contact Gain Community' });
   if (!group) {
@@ -128,8 +133,30 @@ passport.use(new LocalStrategy(async (username, password, done) => {
   try {
     const user = await User.findOne({ username });
     if (!user) return done(null, false, { message: 'Incorrect username.' });
-    if (user.status === 'banned') return done(null, false, { message: 'User is banned.' });
-    if (user.status === 'suspended') return done(null, false, { message: 'User is suspended.' });
+
+    if (user.status === 'banned') {
+      return done(null, false, {
+        message: `Your account has been banned. Reason: ${user.banReason || 'Violating community guidelines'}. Contact support for more information.`
+      });
+    }
+
+    if (user.status === 'suspended') {
+      const suspensionTime = new Date(user.updatedAt);
+      const suspensionDuration = 72; // hours
+      const suspensionEnd = new Date(suspensionTime.getTime() + (suspensionDuration * 60 * 60 * 1000));
+
+      if (Date.now() < suspensionEnd.getTime()) {
+        const hoursLeft = Math.ceil((suspensionEnd - Date.now()) / (1000 * 60 * 60));
+        return done(null, false, {
+          message: `Your account is suspended for ${suspensionDuration} hours. ${hoursLeft} hours remaining. Reason: ${user.suspensionReason || 'Excessive spam reports'}.`
+        });
+      } else {
+        user.status = 'active';
+        user.suspensionReason = null;
+        await user.save();
+      }
+    }
+
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return done(null, false, { message: 'Incorrect password.' });
     return done(null, user);
@@ -161,87 +188,112 @@ const isAdmin = (req, res, next) => {
   res.redirect('/admin/login');
 };
 
-// Socket.io connection
+// Socket.io Connection
 io.on('connection', (socket) => {
   console.log('A user connected');
-  
-  // Join user to their room
+
   socket.on('join', (userId) => {
     socket.join(userId);
     User.findByIdAndUpdate(userId, { lastSeen: Date.now() });
   });
-  
-  // Handle chat messages
+
+  // Community Chat Messages
   socket.on('chat-message', async (data) => {
     try {
       const user = await User.findById(data.userId);
       if (!user) return;
-      
+
       const message = new Message({
         userId: data.userId,
         content: data.content,
-        isPrivate: data.isPrivate,
-        recipient: data.recipient
+        isPrivate: false
       });
-      
+
       await message.save();
-      
-      if (data.isPrivate) {
-        io.to(data.recipient).to(data.userId).emit('private-message', {
-          user: {
-            id: user._id,
-            username: user.username,
-            isAdmin: user.isAdmin,
-            profile: user.profile
-          },
-          content: data.content,
-          createdAt: new Date()
-        });
-      } else {
-        io.emit('chat-message', {
-          user: {
-            id: user._id,
-            username: user.username,
-            isAdmin: user.isAdmin,
-            profile: user.profile
-          },
-          content: data.content,
-          createdAt: new Date()
-        });
-      }
+
+      io.emit('chat-message', {
+        user: {
+          id: user._id,
+          username: user.username,
+          isAdmin: user.isAdmin,
+          profile: user.profile
+        },
+        content: data.content,
+        createdAt: new Date()
+      });
     } catch (err) {
-      console.error('Error saving message:', err);
+      console.error('Error saving community message:', err);
     }
   });
-  
-  // Handle AI requests
+
+  // Private Messages
+  socket.on('private-message', async (data) => {
+    try {
+      const sender = await User.findById(data.senderId);
+      if (!sender) return;
+
+      const message = new Message({
+        userId: data.senderId,
+        recipient: data.recipientId,
+        content: data.content,
+        isPrivate: true
+      });
+
+      await message.save();
+
+      let conversation = await Conversation.findOne({
+        participants: { $all: [data.senderId, data.recipientId] }
+      });
+
+      if (!conversation) {
+        conversation = new Conversation({
+          participants: [data.senderId, data.recipientId],
+          lastMessage: message._id
+        });
+      } else {
+        conversation.lastMessage = message._id;
+        conversation.updatedAt = new Date();
+      }
+
+      await conversation.save();
+
+      io.to(data.recipientId).to(data.senderId).emit('private-message', {
+        sender: {
+          id: sender._id,
+          username: sender.username,
+          isAdmin: sender.isAdmin,
+          profile: sender.profile
+        },
+        content: data.content,
+        createdAt: new Date()
+      });
+    } catch (err) {
+      console.error('Error sending private message:', err);
+    }
+  });
+
+  // AI Requests
   socket.on('ai-request', async (data) => {
     try {
       const user = await User.findById(data.userId);
       if (!user) return;
-      
+
       const aiModels = {
         gpt: 'https://apis.davidcyriltech.my.id/ai/chatbot?query=',
         llama: 'https://apis.davidcyriltech.my.id/ai/llama3?text=',
         deepseek: 'https://apis.davidcyriltech.my.id/ai/deepseek-v3?text=',
         gemini: 'https://api.giftedtech.web.id/api/ai/geminiai?apikey=gifted&q='
       };
-      
+
       const url = aiModels[data.model] + encodeURIComponent(data.query);
       const response = await axios.get(url);
-      
+
       let aiResponse = '';
-      if (data.model === 'gpt') {
-        aiResponse = response.data.result;
-      } else if (data.model === 'llama') {
-        aiResponse = response.data.message;
-      } else if (data.model === 'deepseek') {
-        aiResponse = response.data.response;
-      } else if (data.model === 'gemini') {
-        aiResponse = response.data.result;
-      }
-      
-      // Format AI response
+      if (data.model === 'gpt') aiResponse = response.data.result;
+      else if (data.model === 'llama') aiResponse = response.data.message;
+      else if (data.model === 'deepseek') aiResponse = response.data.response;
+      else if (data.model === 'gemini') aiResponse = response.data.result;
+
       const formattedResponse = `
         <div class="ai-response">
           <div class="ai-header">
@@ -255,24 +307,26 @@ io.on('connection', (socket) => {
           </div>
         </div>
       `;
-      
-      socket.emit('ai-response', {
-        content: formattedResponse
-      });
+
+      socket.emit('ai-response', { content: formattedResponse });
     } catch (err) {
       console.error('AI request error:', err);
-      socket.emit('ai-response', {
-        content: 'Error processing your request. Please try again.'
-      });
+      socket.emit('ai-response', { content: 'Error processing your request. Please try again.' });
     }
   });
-  
-  // Typing indicator
-  socket.on('typing', (data) => {
-    socket.broadcast.emit('typing', data);
+
+  // Typing Indicators
+  socket.on('community-typing', (data) => {
+    socket.broadcast.emit('community-typing', data);
   });
-  
-  // Disconnect
+
+  socket.on('private-typing', (data) => {
+    socket.to(data.recipientId).emit('private-typing', {
+      senderId: data.senderId,
+      isTyping: data.isTyping
+    });
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected');
   });
@@ -294,15 +348,10 @@ app.get('/terminal', isAuthenticated, async (req, res) => {
     const totalDownloads = await Download.countDocuments({ sessionId: { $in: sessions.map(s => s.sessionId) } });
     const avgContacts = totalSessions > 0 ? (totalContacts / totalSessions).toFixed(1) : 0;
 
-    res.render('terminal', { 
-      user: req.user, 
+    res.render('terminal', {
+      user: req.user,
       sessions,
-      stats: {
-        totalContacts,
-        totalSessions: activeSessions,
-        avgContacts,
-        totalDownloads
-      }
+      stats: { totalContacts, totalSessions: activeSessions, avgContacts, totalDownloads }
     });
   } catch (err) {
     console.error('Terminal error:', err);
@@ -352,23 +401,20 @@ app.get('/chat', isAuthenticated, async (req, res) => {
       await createDefaultGroup();
       return res.redirect('/chat');
     }
-    
-    // Add user to group if not already a member
+
     if (!group.members.includes(req.user._id)) {
       group.members.push(req.user._id);
       await group.save();
     }
-    
+
     const messages = await Message.find({ isPrivate: false })
       .sort({ createdAt: -1 })
       .limit(50)
       .populate('userId')
       .populate('repliedTo');
-      
-    const onlineUsers = await User.find({ 
-      lastSeen: { $gt: Date.now() - 300000 } 
-    });
-    
+
+    const onlineUsers = await User.find({ lastSeen: { $gt: Date.now() - 300000 } });
+
     res.render('chat', {
       user: req.user,
       group,
@@ -381,18 +427,26 @@ app.get('/chat', isAuthenticated, async (req, res) => {
   }
 });
 
+// Group Info
+app.get('/group/:groupId', isAuthenticated, async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.groupId).populate('members');
+    if (!group) return res.status(404).send('Group not found');
+
+    res.render('group-info', { user: req.user, group });
+  } catch (err) {
+    console.error('Group info error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
 // User Profile
 app.get('/profile/:userId', isAuthenticated, async (req, res) => {
   try {
     const profileUser = await User.findById(req.params.userId);
-    if (!profileUser) {
-      return res.status(404).send('User not found');
-    }
-    
-    res.render('profile', {
-      currentUser: req.user,
-      profileUser
-    });
+    if (!profileUser) return res.status(404).send('User not found');
+
+    res.render('profile', { currentUser: req.user, profileUser });
   } catch (err) {
     console.error('Profile error:', err);
     res.status(500).send('Internal server error');
@@ -403,10 +457,8 @@ app.get('/profile/:userId', isAuthenticated, async (req, res) => {
 app.get('/private-chat/:userId', isAuthenticated, async (req, res) => {
   try {
     const recipient = await User.findById(req.params.userId);
-    if (!recipient) {
-      return res.status(404).send('User not found');
-    }
-    
+    if (!recipient) return res.status(404).send('User not found');
+
     const messages = await Message.find({
       $or: [
         { userId: req.user._id, recipient: recipient._id },
@@ -415,38 +467,56 @@ app.get('/private-chat/:userId', isAuthenticated, async (req, res) => {
     })
     .sort({ createdAt: 1 })
     .populate('userId');
-    
-    res.render('private-chat', {
-      user: req.user,
-      recipient,
-      messages
+
+    let conversation = await Conversation.findOne({
+      participants: { $all: [req.user._id, recipient._id] }
     });
+
+    if (!conversation) {
+      conversation = new Conversation({
+        participants: [req.user._id, recipient._id]
+      });
+      await conversation.save();
+    }
+
+    res.render('private-chat', { user: req.user, recipient, messages });
   } catch (err) {
     console.error('Private chat error:', err);
     res.status(500).send('Internal server error');
   }
 });
 
-// Consolidated Session Route
-app.get('/session/:sessionId', async (req, res) => {
-  const sessionId = req.params.sessionId;
+// Conversations List
+app.get('/conversations', isAuthenticated, async (req, res) => {
   try {
-    const sessionData = await Session.findOne({ sessionId });
-    if (!sessionData) {
-      return res.status(404).send('Session not found.');
-    }
-    // Check if session is expired and update status if necessary
+    const conversations = await Conversation.find({ participants: req.user._id })
+      .populate('participants')
+      .populate('lastMessage')
+      .sort({ updatedAt: -1 });
+
+    res.render('conversations', { user: req.user, conversations });
+  } catch (err) {
+    console.error('Conversations error:', err);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// Session Route
+app.get('/session/:sessionId', async (req, res) => {
+  try {
+    const sessionData = await Session.findOne({ sessionId: req.params.sessionId });
+    if (!sessionData) return res.status(404).send('Session not found.');
+
     if (Date.now() > sessionData.expiresAt && sessionData.status !== 'expired') {
       sessionData.status = 'expired';
       await sessionData.save();
     }
-    // Calculate remaining time
+
     const msLeft = sessionData.expiresAt - Date.now();
     const totalSeconds = msLeft > 0 ? Math.floor(msLeft / 1000) : 0;
 
-    // Get recommended sessions (last 5 active sessions excluding current)
-    const recommendedSessions = await Session.find({ 
-      sessionId: { $ne: sessionId },
+    const recommendedSessions = await Session.find({
+      sessionId: { $ne: req.params.sessionId },
       expiresAt: { $gt: new Date() },
       status: 'active'
     }).sort({ createdAt: -1 }).limit(5);
@@ -460,7 +530,7 @@ app.get('/session/:sessionId', async (req, res) => {
     });
   } catch (err) {
     console.error('Session error:', err);
-    res.status(500).send('Internal server error.');
+    res.status(500).send('Internal server error');
   }
 });
 
@@ -468,9 +538,7 @@ app.get('/session/:sessionId', async (req, res) => {
 app.post('/delete-session/:sessionId', isAuthenticated, async (req, res) => {
   try {
     const session = await Session.findOne({ sessionId: req.params.sessionId, userId: req.user._id });
-    if (!session) {
-      return res.status(404).send('Session not found');
-    }
+    if (!session) return res.status(404).send('Session not found');
     await session.remove();
     res.redirect('/terminal');
   } catch (err) {
@@ -479,7 +547,7 @@ app.post('/delete-session/:sessionId', isAuthenticated, async (req, res) => {
   }
 });
 
-// Admin Delete User
+// Admin Actions
 app.post('/admin/delete-user/:userId', isAdmin, async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.userId);
@@ -490,7 +558,6 @@ app.post('/admin/delete-user/:userId', isAdmin, async (req, res) => {
   }
 });
 
-// Admin Delete Session
 app.post('/admin/delete-session/:sessionId', isAdmin, async (req, res) => {
   try {
     await Session.findOneAndDelete({ sessionId: req.params.sessionId });
@@ -501,10 +568,9 @@ app.post('/admin/delete-session/:sessionId', isAdmin, async (req, res) => {
   }
 });
 
-// Admin Suspend User
 app.post('/admin/suspend-user/:userId', isAdmin, async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.params.userId, { status: 'suspended' });
+    await User.findByIdAndUpdate(req.params.userId, { status: 'suspended', updatedAt: new Date() });
     res.redirect('/admin');
   } catch (err) {
     console.error('Suspend user error:', err);
@@ -512,7 +578,6 @@ app.post('/admin/suspend-user/:userId', isAdmin, async (req, res) => {
   }
 });
 
-// Admin Unsuspend User
 app.post('/admin/unsuspend-user/:userId', isAdmin, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.params.userId, { status: 'active' });
@@ -523,7 +588,6 @@ app.post('/admin/unsuspend-user/:userId', isAdmin, async (req, res) => {
   }
 });
 
-// Admin Ban User
 app.post('/admin/ban-user/:userId', isAdmin, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.params.userId, { status: 'banned' });
@@ -534,7 +598,6 @@ app.post('/admin/ban-user/:userId', isAdmin, async (req, res) => {
   }
 });
 
-// Admin Unban User
 app.post('/admin/unban-user/:userId', isAdmin, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.params.userId, { status: 'active' });
@@ -545,7 +608,6 @@ app.post('/admin/unban-user/:userId', isAdmin, async (req, res) => {
   }
 });
 
-// Admin Promote User
 app.post('/admin/promote-user/:userId', isAdmin, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.params.userId, { isAdmin: true });
@@ -561,11 +623,11 @@ app.post('/signup', async (req, res) => {
   try {
     const existingUser = await User.findOne({ username: req.body.username });
     if (existingUser) return res.render('signup', { error: 'Username already exists' });
-    
+
     if (req.body.password !== req.body.confirmPassword) {
       return res.render('signup', { error: 'Passwords do not match' });
     }
-    
+
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const user = new User({ username: req.body.username, password: hashedPassword });
     await user.save();
@@ -591,9 +653,7 @@ app.get('/logout', (req, res) => {
 });
 
 // Admin Login
-app.get('/admin/login', (req, res) => {
-  res.render('admin-login');
-});
+app.get('/admin/login', (req, res) => res.render('admin-login'));
 
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
@@ -610,13 +670,13 @@ app.post('/create-session', isAuthenticated, async (req, res) => {
   const { groupName, timer, whatsappLink } = req.body;
   if (!groupName || !timer) return res.status(400).json({ error: 'Group name and timer are required.' });
   if (isNaN(timer) || timer <= 0 || timer > 1440) return res.status(400).json({ error: 'Timer must be a positive number up to 1440 minutes.' });
+
   const sessionId = 'GDT' + crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 6);
   const now = Date.now();
   const expiresAt = new Date(now + parseInt(timer) * 60 * 1000);
+
   try {
-    const session = new Session({
-      userId: req.user._id, sessionId, groupName, whatsappLink, timer, expiresAt
-    });
+    const session = new Session({ userId: req.user._id, sessionId, groupName, whatsappLink, timer, expiresAt });
     await session.save();
     const sessionLink = `${req.protocol}://${req.get('host')}/session/${sessionId}`;
     res.json({ sessionLink });
@@ -630,15 +690,11 @@ app.post('/session/:sessionId/contact', async (req, res) => {
   const { name, phone } = req.body;
   const { sessionId } = req.params;
 
-  if (!name || !phone) {
-    return res.status(400).json({ error: 'Name and phone are required.' });
-  }
+  if (!name || !phone) return res.status(400).json({ error: 'Name and phone are required.' });
 
   try {
     const sessionData = await Session.findOne({ sessionId });
-    if (!sessionData) {
-      return res.status(404).json({ error: 'Session not found.' });
-    }
+    if (!sessionData) return res.status(404).json({ error: 'Session not found.' });
 
     if (Date.now() > sessionData.expiresAt) {
       sessionData.status = 'expired';
@@ -649,7 +705,6 @@ app.post('/session/:sessionId/contact', async (req, res) => {
     const contact = new Contact({ sessionId, name, phone });
     await contact.save();
 
-    // Update contact count
     sessionData.contactCount += 1;
     await sessionData.save();
 
@@ -665,11 +720,8 @@ app.get('/session/:sessionId/download', async (req, res) => {
 
   try {
     const sessionData = await Session.findOne({ sessionId });
-    if (!sessionData) {
-      return res.status(404).send('Session not found.');
-    }
+    if (!sessionData) return res.status(404).send('Session not found.');
 
-    // Update download count
     sessionData.downloadCount += 1;
     await sessionData.save();
 
@@ -687,11 +739,7 @@ END:VCARD
 
     const fileName = `${sessionData.groupName.replace(/[^a-z0-9]/gi, '_')}_${sessionId}.vcf`;
 
-    // Record download
-    const download = new Download({
-      sessionId,
-      status: 'success'
-    });
+    const download = new Download({ sessionId, status: 'success' });
     await download.save();
 
     res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
@@ -699,16 +747,9 @@ END:VCARD
     res.send(vcfData || 'No contacts were added.');
   } catch (err) {
     console.error('Download error:', err);
-
-    // Record failed download
-    const download = new Download({
-      sessionId,
-      status: 'failed',
-      error: err.message
-    });
+    const download = new Download({ sessionId, status: 'failed', error: err.message });
     await download.save();
-
-    res.status(500).send('Internal server error.');
+    res.status(500).send('Internal server error');
   }
 });
 
