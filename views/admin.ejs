@@ -249,23 +249,118 @@
         <div class="stat-card">
           <div class="stat-header">
             <div class="stat-title">Total Users</div>
-            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-icon">
+              <i class="fas fa-users"></i>
+            </div>
           </div>
           <div class="stat-value"><%= stats.totalUsers %></div>
+          <div class="stat-change">
+            <i class="fas fa-arrow-up"></i> 12.4% from last week
+          </div>
         </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Total Sessions</div>
+            <div class="stat-icon">
+              <i class="fas fa-calendar"></i>
+            </div>
+          </div>
+          <div class="stat-value"><%= stats.totalSessions %></div>
+          <div class="stat-change">
+            <i class="fas fa-arrow-up"></i> 8.2% from last week
+          </div>
+        </div>
+
         <div class="stat-card">
           <div class="stat-header">
             <div class="stat-title">Active Sessions</div>
-            <div class="stat-icon"><i class="fas fa-gift"></i></div>
+            <div class="stat-icon">
+              <i class="fas fa-bolt"></i>
+            </div>
           </div>
           <div class="stat-value"><%= stats.activeSessions %></div>
+          <div class="stat-change">
+            <i class="fas fa-arrow-up"></i> 5.3% from last week
+          </div>
         </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Total Contacts</div>
+            <div class="stat-icon">
+              <i class="fas fa-address-book"></i>
+            </div>
+          </div>
+          <div class="stat-value"><%= stats.totalContacts %></div>
+          <div class="stat-change">
+            <i class="fas fa-arrow-up"></i> 18.7% from last week
+          </div>
+        </div>
+
         <div class="stat-card">
           <div class="stat-header">
             <div class="stat-title">Total Downloads</div>
-            <div class="stat-icon"><i class="fas fa-download"></i></div>
+            <div class="stat-icon">
+              <i class="fas fa-download"></i>
+            </div>
           </div>
           <div class="stat-value"><%= stats.totalDownloads %></div>
+          <div class="stat-change">
+            <i class="fas fa-arrow-up"></i> 7.9% from last week
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Succeeded Downloads</div>
+            <div class="stat-icon">
+              <i class="fas fa-check-circle"></i>
+            </div>
+          </div>
+          <div class="stat-value"><%= stats.succeededDownloads %></div>
+          <div class="stat-change">
+            <i class="fas fa-arrow-up"></i> 9.2% from last week
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Failed Downloads</div>
+            <div class="stat-icon">
+              <i class="fas fa-times-circle"></i>
+            </div>
+          </div>
+          <div class="stat-value"><%= stats.failedDownloads %></div>
+          <div class="stat-change">
+            <i class="fas fa-arrow-down"></i> 3.1% from last week
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">Expired/Deleted Sessions</div>
+            <div class="stat-icon">
+              <i class="fas fa-trash"></i>
+            </div>
+          </div>
+          <div class="stat-value"><%= stats.expiredOrDeletedSessions %></div>
+          <div class="stat-change">
+            <i class="fas fa-arrow-up"></i> 4.5% from last week
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-title">WhatsApp Links Added</div>
+            <div class="stat-icon">
+              <i class="fab fa-whatsapp"></i>
+            </div>
+          </div>
+          <div class="stat-value"><%= stats.sessionsWithWhatsapp %></div>
+          <div class="stat-change">
+            <i class="fas fa-arrow-up"></i> 11.3% from last week
+          </div>
         </div>
       </div>
       <div class="section-title">Manage Users</div>
