@@ -1,223 +1,321 @@
+<!-- File: Contact-Vcf-main/views/profile.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Conversations | Contact Gain</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary: #6366f1;
-      --primary-light: #818cf8;
-      --secondary: #10b981;
-      --danger: #ef4444;
-      --warning: #f59e0b;
-      --info: #0ea5e9;
-      --dark: #1e293b;
-      --light: #f8fafc;
-      --gray: #94a3b8;
-      --card-bg: #ffffff;
-      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --avatar-border: #e2e8f0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= profileUser.username %>'s Profile | Contact Gain</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #0ea5e9;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+            --card-bg: #ffffff;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
-    }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: var(--dark);
+            display: flex;
+            min-height: 100vh;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    body {
-      background: linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)), url('https://images.unsplash.com/photo-1557683316-973673baf926') no-repeat center center fixed;
-      background-size: cover;
-      color: #334155;
-      min-height: 100vh;
-      padding: 2rem;
-    }
+        .sidebar {
+            width: 250px;
+            background: var(--card-bg);
+            box-shadow: var(--card-shadow);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: var(--gray);
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary);
+        }
+        .nav-link i { font-size: 1.2rem; width: 24px; text-align: center; margin-right: 0.75rem; }
 
-    .conversations-container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
+        .user-section { margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(0, 0, 0, 0.1); }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+         .user-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .online-dot {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            background: var(--secondary);
+            border-radius: 50%;
+            border: 2px solid var(--card-bg);
+        }
+        .user-details { flex-grow: 1; }
+        .user-name { font-weight: 600; margin-bottom: 0.2rem; font-size: 0.95rem; }
+        .user-email { font-size: 0.8rem; color: var(--gray); }
+        .logout-btn {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 0.6rem;
+            margin-top: 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+        }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.2); }
 
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-    }
+        .main-content {
+            flex-grow: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
 
-    .header h1 {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: var(--dark);
-    }
+        .profile-header {
+             text-align: center;
+             margin-bottom: 2rem;
+             padding: 2rem;
+             background: white;
+             border-radius: 12px;
+             box-shadow: var(--card-shadow);
+             animation: slideInUp 0.6s ease-out;
+         }
+        @keyframes slideInUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-    .conversations-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
+        .profile-avatar {
+             width: 120px;
+             height: 120px;
+             border-radius: 50%;
+             background: var(--primary);
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             font-weight: 700;
+             color: white;
+             margin: 0 auto 1rem auto;
+             font-size: 3rem;
+             border: 4px solid var(--primary-light);
+             overflow: hidden;
+             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+         }
+         .profile-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
 
-    .conversation-card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: var(--card-shadow);
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      text-decoration: none;
-      color: inherit;
-    }
+        .profile-name {
+             font-size: 2rem;
+             font-weight: 700;
+             margin-bottom: 0.5rem;
+             color: var(--dark);
+         }
+         .profile-bio {
+             font-size: 1rem;
+             color: var(--gray);
+             margin-bottom: 1rem;
+         }
 
-    .conversation-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    }
+        .profile-actions {
+             display: flex;
+             justify-content: center;
+             gap: 1rem;
+             margin-top: 1rem;
+         }
 
-    .conversation-avatar {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 600;
-      position: relative;
-      flex-shrink: 0;
-      border: 2px solid var(--avatar-border);
-      overflow: hidden;
-    }
+        .profile-btn {
+             padding: 0.8rem 1.5rem;
+             border-radius: 30px;
+             font-weight: 500;
+             display: flex;
+             align-items: center;
+             gap: 0.5rem;
+             cursor: pointer;
+             transition: all 0.3s ease;
+             text-decoration: none;
+             border: none;
+             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .profile-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .message-btn { background: var(--primary); color: white; }
+        .edit-btn {
+             background: var(--light);
+             color: var(--dark);
+             border: 1px solid var(--gray) !important;
+         }
 
-    .conversation-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
+        .profile-body {
+             padding: 2rem;
+             background: white;
+             border-radius: 12px;
+             box-shadow: var(--card-shadow);
+             animation: fadeIn 0.7s ease-out;
+         }
 
-    .online-status {
-      position: absolute;
-      bottom: 5px;
-      right: 5px;
-      width: 12px;
-      height: 12px;
-      background: var(--secondary);
-      border-radius: 50%;
-      border: 2px solid white;
-    }
+        .section-title {
+             font-size: 1.3rem;
+             font-weight: 600;
+             margin-bottom: 1.5rem;
+             padding-bottom: 0.5rem;
+             border-bottom: 1px solid #e2e8f0;
+         }
 
-    .conversation-info {
-      flex-grow: 1;
-    }
+        .profile-details {
+             display: grid;
+             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+             gap: 1.5rem;
+             margin-bottom: 2rem;
+         }
 
-    .conversation-name {
-      font-weight: 600;
-      font-size: 1.1rem;
-      margin-bottom: 0.25rem;
-    }
+        .detail-item {
+             display: flex;
+             flex-direction: column;
+         }
 
-    .conversation-preview {
-      font-size: 0.9rem;
-      color: var(--gray);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 500px;
-    }
+        .detail-label {
+             font-size: 0.9rem;
+             color: var(--gray);
+             margin-bottom: 0.3rem;
+         }
 
-    .conversation-time {
-      font-size: 0.8rem;
-      color: var(--gray);
-      text-align: right;
-      min-width: 70px;
-    }
+        .detail-value {
+             font-size: 1.1rem;
+             font-weight: 500;
+             color: var(--dark);
+         }
 
-    .no-conversations {
-      text-align: center;
-      padding: 3rem;
-      color: var(--gray);
-      background: white;
-      border-radius: 12px;
-      box-shadow: var(--card-shadow);
-    }
-
-    @media (max-width: 768px) {
-      .conversation-card {
-        padding: 1rem;
-        gap: 1rem;
-      }
-      
-      .conversation-avatar {
-        width: 50px;
-        height: 50px;
-      }
-      
-      .conversation-preview {
-        max-width: 250px;
-      }
-    }
-  </style>
+        @media (max-width: 768px) {
+            .sidebar { width: 70px; }
+            .nav-link span, .user-details, .logout-btn span { display: none; }
+            .nav-link i { margin-right: 0; text-align: center; width: 100%; }
+            .user-avatar { width: 30px; height: 30px; }
+            .profile-details { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
-  <div class="conversations-container">
-    <div class="header">
-      <h1>Your Conversations</h1>
-    </div>
-    
-    <div class="conversations-list">
-      <% if (conversations.length === 0) { %>
-        <div class="no-conversations">
-          <i class="fas fa-comments" style="font-size: 3rem; margin-bottom: 1rem;"></i>
-          <h2>No conversations yet</h2>
-          <p>Start a new conversation by visiting someone's profile</p>
-        </div>
-      <% } else { %>
-        <% conversations.forEach(conversation => { %>
-          <% 
-            const otherParticipant = conversation.participants.find(
-              p => p._id.toString() !== user._id.toString()
-            );
-          %>
-          <a href="/private-chat/<%= otherParticipant._id %>" class="conversation-card">
-            <div class="conversation-avatar">
-              <% if (otherParticipant.profile && otherParticipant.profile.profilePic) { %>
-                <img src="<%= otherParticipant.profile.profilePic %>" alt="Profile">
-              <% } else { %>
-                <%= otherParticipant.username.charAt(0).toUpperCase() %>
-              <% } %>
-              <% if (otherParticipant.lastSeen > Date.now() - 300000) { %>
-                <div class="online-status"></div>
-              <% } %>
-            </div>
-            <div class="conversation-info">
-              <div class="conversation-name"><%= otherParticipant.profile?.name || otherParticipant.username %></div>
-              <div class="conversation-preview">
-                <% if (conversation.lastMessage) { %>
-                  <% if (conversation.lastMessage.userId._id.toString() === user._id.toString()) { %>
-                    You: 
-                  <% } %>
-                  <%= conversation.lastMessage.content %>
+<div class="sidebar">
+    <a href="/terminal" class="nav-link"><i class="fas fa-home"></i> <span>Dashboard</span></a>
+    <a href="/chat" class="nav-link"><i class="fas fa-comments"></i> <span>Community Chat</span></a>
+    <a href="/profile" class="nav-link active"><i class="fas fa-user"></i> <span>My Profile</span></a>
+    <a href="/api-docs" class="nav-link"><i class="fas fa-code"></i> <span>API Docs</span></a>
+    <div class="user-section">
+        <div class="user-info">
+            <div class="user-avatar">
+                <% if (currentUser.profile && currentUser.profile.profilePic) { %>
+                <img src="<%= currentUser.profile.profilePic %>" alt="Profile">
                 <% } else { %>
-                  Start a conversation...
+                <%= currentUser.username.charAt(0).toUpperCase() %>
                 <% } %>
-              </div>
+                <div class="online-dot" id="currentUserOnlineDot"></div>
             </div>
-            <div class="conversation-time">
-              <% if (conversation.lastMessage) { %>
-                <%= new Date(conversation.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %>
-              <% } %>
+            <div class="user-details">
+                <div class="user-name"><%= currentUser.username %></div>
+                <div class="user-email"><%= currentUser.email %></div>
             </div>
-          </a>
-        <% }); %>
-      <% } %>
+        </div>
+        <form action="/logout" method="POST">
+            <button type="submit" class="logout-btn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></button>
+        </form>
     </div>
-  </div>
+</div>
+
+<div class="main-content">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            <% if (profileUser.profile && profileUser.profile.profilePic) { %>
+            <img src="<%= profileUser.profile.profilePic %>" alt="<%= profileUser.username %>">
+            <% } else { %>
+            <%= profileUser.username.charAt(0).toUpperCase() %>
+            <% } %>
+        </div>
+        <h1 class="profile-name"><%= profileUser.username %></h1>
+        <% if (profileUser.profile && profileUser.profile.bio) { %>
+        <p class="profile-bio"><%= profileUser.profile.bio %></p>
+        <% } %>
+
+        <div class="profile-actions">
+            <% if (currentUser._id.toString() === profileUser._id.toString()) { %>
+            <button class="profile-btn edit-btn" id="editProfileBtn">
+                <i class="fas fa-edit"></i> Edit Profile
+            </button>
+            <% } else { %>
+            <button class="profile-btn message-btn" id="messageBtn">
+                <i class="fas fa-envelope"></i> Send Message
+            </button>
+            <% } %>
+        </div>
+    </div>
+
+    <div class="profile-body">
+        <h2 class="section-title">Details</h2>
+        <div class="profile-details">
+            <div class="detail-item">
+                <div class="detail-label">Name</div>
+                <div class="detail-value"><%= profileUser.name || 'Not set' %></div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Username</div>
+                <div class="detail-value"><%= profileUser.username %></div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Email</div>
+                <div class="detail-value"><%= profileUser.email %></div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Phone Number</div>
+                <div class="detail-value"><%= (profileUser.profile && profileUser.profile.phone) ? profileUser.profile.phone : 'Not set' %></div>
+            </div>
+             <div class="detail-item">
+                 <div class="detail-label">Member Since</div>
+                 <div class="detail-value"><%= new Date(profileUser.createdAt).toLocaleDateString() %></div>
+             </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('messageBtn')?.addEventListener('click', () => {
+        window.location.href = `/private-chat/<%= profileUser._id %>`;
+    });
+    document.getElementById('editProfileBtn')?.addEventListener('click', () => {
+        window.location.href = '/edit-profile';
+    });
+</script>
 </body>
 </html>
