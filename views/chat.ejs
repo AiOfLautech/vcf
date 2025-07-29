@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Private Chat | Contact Gain</title>
+    <title>Community Chat | Contact Gain</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -60,70 +60,24 @@
             gap: 1rem;
         }
         
-        .avatar {
+        .chat-icon {
             width: 2.5rem;
             height: 2.5rem;
-            border-radius: 50%;
-            background: var(--primary-light);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+        
+        .chat-title {
+            font-size: 1.25rem;
             font-weight: 600;
-            color: white;
         }
         
-        .user-info {
-            flex: 1;
-        }
-        
-        .user-name {
-            font-weight: 600;
-            font-size: 1.125rem;
-        }
-        
-        .user-status {
+        .chat-subtitle {
             font-size: 0.875rem;
             opacity: 0.9;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-        
-        .status-indicator {
-            width: 0.75rem;
-            height: 0.75rem;
-            border-radius: 50%;
-        }
-        
-        .status-online {
-            background: var(--secondary);
-        }
-        
-        .status-offline {
-            background: var(--gray);
-        }
-        
-        .chat-actions {
-            display: flex;
-            gap: 0.75rem;
-        }
-        
-        .action-btn {
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
         }
         
         .chat-body {
@@ -454,25 +408,12 @@
     <div class="container">
         <div class="chat-container">
             <div class="chat-header">
-                <div class="avatar">
-                    <%= recipient.profile?.name ? recipient.profile.name.charAt(0) : recipient.username.charAt(0) %>
+                <div class="chat-icon">
+                    <i class="fas fa-comments"></i>
                 </div>
-                <div class="user-info">
-                    <div class="user-name">
-                        <%= recipient.profile?.name || recipient.username %>
-                    </div>
-                    <div class="user-status">
-                        <span class="status-indicator <%= recipient.isSuspended ? 'status-offline' : 'status-online' %>"></span>
-                        <%= recipient.isSuspended ? 'Suspended' : 'Online' %>
-                    </div>
-                </div>
-                <div class="chat-actions">
-                    <button class="action-btn" title="Profile">
-                        <i class="fas fa-user"></i>
-                    </button>
-                    <button class="action-btn" title="Call">
-                        <i class="fas fa-phone"></i>
-                    </button>
+                <div>
+                    <div class="chat-title">Community Chat</div>
+                    <div class="chat-subtitle">Connect with other users</div>
                 </div>
             </div>
             
@@ -482,55 +423,15 @@
                         <span class="date-badge">Today</span>
                     </div>
                     
-                    <% messages.forEach(message => { %>
-                        <% const isMine = message.userId.toString() === user._id.toString() %>
-                        <div class="message <%= isMine ? 'sent' : 'received' %> <%= message.isDeleted ? 'deleted' : '' %>" 
-                             data-message-id="<%= message._id %>">
-                            <% if (!isMine) { %>
-                            <div class="message-header">
-                                <div class="sender-name">
-                                    <%= isMine ? 'You' : (recipient.profile?.name || recipient.username) %>
-                                </div>
-                                <div class="message-time">
-                                    <%= new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %>
-                                    <% if (message.editedAt) { %> (edited)<% } %>
-                                </div>
-                            </div>
-                            <% } %>
-                            
-                            <div class="message-content">
-                                <% if (message.isDeleted) { %>
-                                    <i class="fas fa-trash"></i> This message was deleted
-                                <% } else if (message.messageType === 'reply' && message.repliedTo) { %>
-                                    <div class="reply-highlight">
-                                        <%= message.repliedTo.content.substring(0, 50) %><%= message.repliedTo.content.length > 50 ? '...' : '' %>
-                                    </div>
-                                    <%= message.content %>
-                                <% } else { %>
-                                    <%= message.content %>
-                                <% } %>
-                            </div>
-                            
-                            <% if (isMine && !message.isDeleted) { %>
-                            <div class="message-actions">
-                                <div class="message-btn edit-btn" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </div>
-                                <div class="message-btn delete-btn" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </div>
-                            </div>
-                            <% } %>
-                        </div>
-                    <% }); %>
-                    
-                    <div class="typing-indicator" id="typingIndicator" style="display: none;">
-                        <span class="sender-name"><%= recipient.profile?.name || recipient.username %></span> is typing
-                        <div class="typing-dots">
-                            <span class="typing-dot"></span>
-                            <span class="typing-dot"></span>
-                            <span class="typing-dot"></span>
-                        </div>
+                    <!-- Messages will be populated here by JavaScript -->
+                </div>
+                
+                <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                    <span class="sender-name" id="typingUserName"></span> is typing
+                    <div class="typing-dots">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
                     </div>
                 </div>
             </div>
@@ -594,11 +495,11 @@
         const aiPanel = document.getElementById('aiPanel');
         const closeAiPanel = document.getElementById('closeAiPanel');
         const typingIndicator = document.getElementById('typingIndicator');
+        const typingUserName = document.getElementById('typingUserName');
         
         let isTyping = false;
         let typingTimer;
         let currentModel = 'standard';
-        const recipientId = '<%= recipient._id %>';
         
         // Set up message input auto-resize
         messageInput.addEventListener('input', function() {
@@ -608,19 +509,13 @@
             // Send typing indicator
             if (!isTyping) {
                 isTyping = true;
-                socket.emit('typing', { 
-                    isTyping: true,
-                    recipientId: recipientId
-                });
+                socket.emit('typing', { isTyping: true });
             }
             
             clearTimeout(typingTimer);
             typingTimer = setTimeout(() => {
                 isTyping = false;
-                socket.emit('typing', { 
-                    isTyping: false,
-                    recipientId: recipientId
-                });
+                socket.emit('typing', { isTyping: false });
             }, 1000);
         });
         
@@ -669,7 +564,7 @@
                     },
                     body: JSON.stringify({
                         content,
-                        recipientId: recipientId
+                        recipientId: null // null for community chat
                     })
                 }).catch(() => {
                     // If send fails, we could mark the message as failed
@@ -689,7 +584,7 @@
             const content = messageInput.value.trim();
             if (content) {
                 socket.emit('ai-request', {
-                    userId: recipientId,
+                    userId: '<%= user._id %>',
                     query: content,
                     model: currentModel
                 });
@@ -737,14 +632,10 @@
             }
             
             messageElement.innerHTML = `
-                <% if (!isMine) { %>
                 <div class="message-header">
-                    <div class="sender-name">
-                        <%= isMine ? 'You' : (recipient.profile?.name || recipient.username) %>
-                    </div>
+                    <div class="sender-name">${isMine ? 'You' : (messageData.userId.profile?.name || messageData.userId.username)}</div>
                     <div class="message-time">${timeString}${messageData.editedAt ? ' (edited)' : ''}</div>
                 </div>
-                <% } %>
                 <div class="message-content">${contentHTML}</div>
             `;
             
@@ -835,64 +726,55 @@
         });
         
         socket.on('new-message', (message) => {
-            if (message.recipient.toString() === '<%= user._id %>' && 
-                message.userId.toString() === recipientId) {
-                addMessage(message);
-            }
+            addMessage(message);
         });
         
         socket.on('message-updated', (message) => {
-            if (message.userId.toString() === recipientId || 
-                message.recipient.toString() === recipientId) {
-                const messageElement = document.querySelector(`.message[data-message-id="${message._id}"]`);
-                if (messageElement) {
-                    const contentElement = messageElement.querySelector('.message-content');
-                    contentElement.innerHTML = message.content;
-                    
-                    const timeElement = messageElement.querySelector('.message-time');
-                    timeElement.textContent = new Date(message.createdAt).toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                    }) + ' (edited)';
-                }
+            const messageElement = document.querySelector(`.message[data-message-id="${message._id}"]`);
+            if (messageElement) {
+                const contentElement = messageElement.querySelector('.message-content');
+                contentElement.innerHTML = message.content;
+                
+                const timeElement = messageElement.querySelector('.message-time');
+                timeElement.textContent = new Date(message.createdAt).toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }) + ' (edited)';
             }
         });
         
         socket.on('message-deleted', (message) => {
-            if (message.userId.toString() === recipientId || 
-                message.recipient.toString() === recipientId) {
-                const messageElement = document.querySelector(`.message[data-message-id="${message._id}"]`);
-                if (messageElement) {
-                    messageElement.classList.add('deleted');
-                    messageElement.querySelector('.message-content').innerHTML = 
-                        '<i class="fas fa-trash"></i> This message was deleted';
-                    
-                    // Remove message actions
-                    const actions = messageElement.querySelector('.message-actions');
-                    if (actions) actions.remove();
-                }
+            const messageElement = document.querySelector(`.message[data-message-id="${message._id}"]`);
+            if (messageElement) {
+                messageElement.classList.add('deleted');
+                messageElement.querySelector('.message-content').innerHTML = 
+                    '<i class="fas fa-trash"></i> This message was deleted';
+                
+                // Remove message actions
+                const actions = messageElement.querySelector('.message-actions');
+                if (actions) actions.remove();
             }
         });
         
         socket.on('user-typing', (data) => {
-            if (data.userId === recipientId.toString()) {
-                if (data.isTyping) {
-                    typingIndicator.style.display = 'flex';
-                } else {
-                    typingIndicator.style.display = 'none';
-                }
+            if (data.isTyping) {
+                const user = data.userId === '<%= user._id %>' ? 'You' : data.userName || 'Someone';
+                typingUserName.textContent = user;
+                typingIndicator.style.display = 'flex';
+            } else {
+                typingIndicator.style.display = 'none';
             }
         });
         
         socket.on('ai-response', (data) => {
-            if (data.userId === recipientId && data.error) {
+            if (data.error) {
                 addMessage({
                     userId: { _id: 'ai', username: 'AI System' },
                     content: `⚠️ Error: ${data.error}`,
                     createdAt: new Date(),
                     isMine: false
                 });
-            } else if (data.userId === recipientId) {
+            } else {
                 addAIResponse(data.response);
             }
         });
