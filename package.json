@@ -1,7 +1,7 @@
 {
-  "name": "vcf-session-generator",
-  "version": "4.0.0",
-  "description": "Advanced VCF Session Generator with Community Chat & AI Integration",
+  "name": "contact-gain",
+  "version": "5.0.0",
+  "description": "Advanced Contact Gain Platform with Community Chat & AI Integration",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
