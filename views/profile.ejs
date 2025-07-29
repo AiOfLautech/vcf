@@ -1,527 +1,299 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile | Contact Gain</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #6366f1;
-            --primary-light: #818cf8;
-            --secondary: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #0ea5e9;
-            --dark: #1e293b;
-            --light: #f8fafc;
-            --gray: #94a3b8;
-            --card-bg: #ffffff;
-            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9;
-            color: var(--dark);
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        
-        .profile-header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            margin-bottom: 2rem;
-            position: relative;
-        }
-        
-        .profile-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: var(--primary-light);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.5rem;
-            overflow: hidden;
-            border: 3px solid white;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        
-        .profile-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .profile-avatar span {
-            font-size: 3rem;
-            font-weight: 600;
-            color: white;
-        }
-        
-        .profile-name {
-            font-size: 1.875rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            color: var(--dark);
-        }
-        
-        .profile-username {
-            font-size: 1.125rem;
-            color: var(--gray);
-            margin-bottom: 1rem;
-        }
-        
-        .profile-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            margin-bottom: 1.5rem;
-        }
-        
-        .status-online {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--secondary);
-        }
-        
-        .status-offline {
-            background: rgba(148, 163, 184, 0.1);
-            color: var(--gray);
-        }
-        
-        .profile-actions {
-            display: flex;
-            gap: 1rem;
-        }
-        
-        .btn {
-            padding: 0.5rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            border: none;
-        }
-        
-        .btn-primary:hover {
-            background: #4f46e5;
-        }
-        
-        .btn-outline {
-            background: transparent;
-            border: 1px solid var(--gray);
-            color: var(--dark);
-        }
-        
-        .btn-outline:hover {
-            background: rgba(148, 163, 184, 0.1);
-        }
-        
-        .profile-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: var(--card-shadow);
-            text-align: center;
-            transition: transform 0.2s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stat-value {
-            font-size: 1.875rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin: 0.5rem 0;
-        }
-        
-        .stat-label {
-            color: var(--gray);
-            font-size: 0.875rem;
-        }
-        
-        .profile-content {
-            display: grid;
-            grid-template-columns: 3fr 1fr;
-            gap: 1.5rem;
-        }
-        
-        @media (max-width: 992px) {
-            .profile-content {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .profile-main {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: var(--card-shadow);
-        }
-        
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--dark);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .profile-bio {
-            margin-bottom: 1.5rem;
-            line-height: 1.6;
-            color: var(--dark);
-        }
-        
-        .contact-info {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .contact-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            border-radius: 8px;
-            background: #f8fafc;
-        }
-        
-        .contact-icon {
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 8px;
-            background: var(--primary-light);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-        
-        .contact-details {
-            flex: 1;
-        }
-        
-        .contact-label {
-            font-size: 0.75rem;
-            color: var(--gray);
-            margin-bottom: 0.25rem;
-        }
-        
-        .contact-value {
-            font-weight: 500;
-            color: var(--dark);
-        }
-        
-        .profile-sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-        
-        .server-info {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: var(--card-shadow);
-        }
-        
-        .server-info h3 {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--dark);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .server-stat {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #edf2f7;
-        }
-        
-        .server-stat:last-child {
-            border-bottom: none;
-        }
-        
-        .server-label {
-            color: var(--gray);
-            font-size: 0.875rem;
-        }
-        
-        .server-value {
-            font-weight: 500;
-            color: var(--dark);
-            text-align: right;
-        }
-        
-        .ai-response {
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: var(--card-shadow);
-        }
-        
-        .ai-response-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        
-        .ai-title {
-            font-weight: 600;
-            color: var(--dark);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .ai-creator {
-            font-weight: 600;
-            color: var(--primary);
-        }
-        
-        .ai-content {
-            line-height: 1.6;
-            color: var(--dark);
-            font-size: 0.95rem;
-        }
-        
-        .ai-timestamp {
-            text-align: right;
-            font-size: 0.75rem;
-            color: var(--gray);
-            margin-top: 0.5rem;
-        }
-        
-        .telegram-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #0088cc, #006699);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 500;
-            margin-top: 1rem;
-            transition: all 0.2s ease;
-        }
-        
-        .telegram-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 136, 204, 0.3);
-        }
-        
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .profile-main, .profile-sidebar > * {
-            animation: fadeIn 0.3s ease forwards;
-        }
-        
-        .profile-main { animation-delay: 0.1s; }
-        .profile-sidebar > *:first-child { animation-delay: 0.2s; }
-        .profile-sidebar > *:last-child { animation-delay: 0.3s; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile | Contact Gain</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --secondary: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --info: #0ea5e9;
+      --dark: #1e293b;
+      --light: #f8fafc;
+      --gray: #94a3b8;
+      --card-bg: #ffffff;
+      --card-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      background: linear-gradient(to bottom, #e0e7ff, #f1f5f9);
+      color: #334155;
+      min-height: 100vh;
+      padding: 2rem;
+      animation: fadeIn 1s ease-in;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .profile-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      animation: slideInUp 0.7s ease-out;
+    }
+    @keyframes slideInUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .profile-header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      padding: 3rem 2rem 2rem;
+      text-align: center;
+      position: relative;
+    }
+    .profile-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: white;
+      margin: 0 auto 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      color: var(--primary);
+      position: relative;
+      border: 5px solid white;
+      transition: transform 0.3s ease;
+    }
+    .profile-avatar:hover { transform: scale(1.1); }
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .online-status {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 20px;
+      height: 20px;
+      background: var(--secondary);
+      border-radius: 50%;
+      border: 3px solid white;
+    }
+    .profile-name {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 0.5rem;
+    }
+    .profile-username {
+      font-size: 1.2rem;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 1rem;
+    }
+    .admin-badge {
+      display: inline-block;
+      background: var(--info);
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+    }
+    .profile-actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .profile-btn {
+      padding: 0.8rem 1.5rem;
+      border-radius: 30px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .profile-btn:hover { transform: scale(1.05); }
+    .message-btn {
+      background: white;
+      color: var(--primary);
+      border: none;
+    }
+    .message-btn:hover { background: rgba(255,255,255,0.9); }
+    .edit-btn, .more-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+    }
+    .edit-btn:hover, .more-btn:hover { background: rgba(255,255,255,0.3); }
+    .profile-body {
+      padding: 2rem;
+    }
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .profile-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .detail-item {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: var(--card-shadow);
+      transition: transform 0.3s ease;
+    }
+    .detail-item:hover { transform: translateY(-5px); }
+    .detail-label {
+      font-size: 0.9rem;
+      color: var(--gray);
+      margin-bottom: 0.5rem;
+    }
+    .detail-value {
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+    .bio-content {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 1.5rem;
+      line-height: 1.6;
+      box-shadow: var(--card-shadow);
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .stat-card {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: var(--card-shadow);
+      transition: transform 0.3s ease;
+    }
+    .stat-card:hover { transform: translateY(-5px); }
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--gray);
+    }
+    @media (max-width: 768px) {
+      .profile-header { padding: 2rem 1rem 1.5rem; }
+      .profile-avatar { width: 100px; height: 100px; font-size: 2.5rem; }
+      .profile-name { font-size: 1.5rem; }
+      .profile-username { font-size: 1rem; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="profile-header">
-            <div class="profile-avatar">
-                <% if (profileUser.profile?.profilePic) { %>
-                    <img src="<%= profileUser.profile.profilePic %>" alt="Profile picture">
-                <% } else { %>
-                    <span><%= profileUser.profile?.name ? profileUser.profile.name.charAt(0) : profileUser.username.charAt(0) %></span>
-                <% } %>
-            </div>
-            <h1 class="profile-name"><%= profileUser.profile?.name || profileUser.username %></h1>
-            <div class="profile-username">@<%= profileUser.username %></div>
-            <div class="profile-status <%= profileUser.isSuspended ? 'status-offline' : 'status-online' %>">
-                <i class="fas <%= profileUser.isSuspended ? 'fa-user-slash' : 'fa-circle' %>"></i>
-                <%= profileUser.isSuspended ? 'Suspended' : 'Active' %>
-            </div>
-            
-            <div class="profile-actions">
-                <% if (user._id.toString() === profileUser._id.toString()) { %>
-                    <button class="btn btn-primary" id="editProfileBtn">
-                        <i class="fas fa-edit"></i> Edit Profile
-                    </button>
-                <% } else { %>
-                    <button class="btn btn-primary" id="messageBtn">
-                        <i class="fas fa-paper-plane"></i> Message
-                    </button>
-                <% } %>
-            </div>
-        </div>
-        
-        <div class="profile-stats">
-            <div class="stat-card">
-                <div class="stat-value">24</div>
-                <div class="stat-label">Active Sessions</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">142</div>
-                <div class="stat-label">Contacts Collected</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">8</div>
-                <div class="stat-label">Groups Joined</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">36</div>
-                <div class="stat-label">Messages Sent</div>
-            </div>
-        </div>
-        
-        <div class="profile-content">
-            <div class="profile-main">
-                <h2 class="section-title"><i class="fas fa-user"></i> About Me</h2>
-                <p class="profile-bio">
-                    <%= profileUser.profile?.bio || 'No bio provided.' %>
-                </p>
-                
-                <h2 class="section-title"><i class="fas fa-address-book"></i> Contact Information</h2>
-                <div class="contact-info">
-                    <% if (profileUser.profile?.phone) { %>
-                    <div class="contact-item">
-                        <div class="contact-icon">
-                            <i class="fas fa-phone"></i>
-                        </div>
-                        <div class="contact-details">
-                            <div class="contact-label">Phone</div>
-                            <div class="contact-value"><%= profileUser.profile.phone %></div>
-                        </div>
-                    </div>
-                    <% } %>
-                    
-                    <% if (profileUser.email) { %>
-                    <div class="contact-item">
-                        <div class="contact-icon">
-                            <i class="fas fa-envelope"></i>
-                        </div>
-                        <div class="contact-details">
-                            <div class="contact-label">Email</div>
-                            <div class="contact-value"><%= profileUser.email %></div>
-                        </div>
-                    </div>
-                    <% } %>
-                </div>
-                
-                <h2 class="section-title"><i class="fas fa-robot"></i> AI Assistant Response</h2>
-                <div class="ai-response">
-                    <div class="ai-response-header">
-                        <div class="ai-title">
-                            <i class="fas fa-robot"></i> Contact Gain AI
-                        </div>
-                        <span class="ai-creator">Contact Gain</span>
-                    </div>
-                    <div class="ai-content">
-                        This user has an active profile on Contact Gain. They've participated in 24 sessions and collected 142 contacts. 
-                        Their account is currently <%= profileUser.isSuspended ? 'suspended' : 'active' %>. 
-                        Contact Gain helps you build your network and grow your business through seamless contact sharing.
-                    </div>
-                    <div class="ai-timestamp">Uᴘᴛɪᴍᴇ: 𝟏𝟒d 𝟐𝟏h 𝟐𝟎m 𝟑𝟗s ┃ Tɪᴍᴇ Nᴏᴡ: 𝟎𝟑:𝟎𝟎:𝟓𝟗 pm ┃ Dᴀᴛᴇ Tᴏᴅᴀʏ: 𝟎𝟕/𝟎𝟕/𝟐𝟎𝟐𝟓 ┃ Tɪᴍᴇ Zᴏɴᴇ: 𝙰frica/𝙻agos ┃ Sᴇʀᴠᴇʀ Rᴀᴍ: 𝟕𝟒.𝟖𝟏 𝙶𝙱/𝟏𝟐𝟓.𝟕𝟕 𝙶𝙱</div>
-                    <a href="#" class="telegram-button">Send Message via Contact Gain</a>
-                </div>
-            </div>
-            
-            <div class="profile-sidebar">
-                <div class="server-info">
-                    <h3><i class="fas fa-server"></i> Server Information</h3>
-                    <div class="server-stat">
-                        <div class="server-label">Uᴘᴛɪᴍᴇ</div>
-                        <div class="server-value"><%= uptime %></div>
-                    </div>
-                    <div class="server-stat">
-                        <div class="server-label">Tɪᴍᴇ Nᴏᴡ</div>
-                        <div class="server-value"><%= timeNow %></div>
-                    </div>
-                    <div class="server-stat">
-                        <div class="server-label">Dᴀᴛᴇ Tᴏᴅᴀʏ</div>
-                        <div class="server-value"><%= dateToday %></div>
-                    </div>
-                    <div class="server-stat">
-                        <div class="server-label">Tɪᴍᴇ Zᴏɴᴇ</div>
-                        <div class="server-value">Africa/Lagos</div>
-                    </div>
-                    <div class="server-stat">
-                        <div class="server-label">Sᴇʀᴠᴇʀ Rᴀᴍ</div>
-                        <div class="server-value"><%= usedMemory %> GB / <%= totalMemory %> GB</div>
-                    </div>
-                </div>
-                
-                <div class="ai-response">
-                    <div class="ai-response-header">
-                        <div class="ai-title">
-                            <i class="fas fa-bolt"></i> Contact Gain
-                        </div>
-                    </div>
-                    <div class="ai-content">
-                        Powered by Contact Gain - the ultimate platform for network building and contact sharing.
-                    </div>
-                    <div class="ai-timestamp">Runtime information as of <%= new Date().toLocaleString() %></div>
-                </div>
-            </div>
-        </div>
+  <div class="profile-container">
+    <div class="profile-header">
+      <div class="profile-avatar">
+        <% if (profileUser.profile && profileUser.profile.profilePic) { %>
+          <img src="<%= profileUser.profile.profilePic %>" alt="Profile">
+        <% } else { %>
+          <%= profileUser.username.charAt(0).toUpperCase() %>
+        <% } %>
+        <% if (profileUser.lastSeen > Date.now() - 300000) { %>
+          <div class="online-status"></div>
+        <% } %>
+      </div>
+      <div class="profile-name">
+        <%= profileUser.profile?.name || profileUser.username %>
+        <% if (profileUser.isAdmin) { %>
+          <span class="admin-badge"><i class="fas fa-check-circle"></i> Admin</span>
+        <% } %>
+      </div>
+      <div class="profile-username">@<%= profileUser.username %></div>
+      <div class="profile-actions">
+        <div class="profile-btn message-btn" id="messageBtn"><i class="fas fa-envelope"></i> Message</div>
+        <% if (currentUser._id.toString() === profileUser._id.toString()) { %>
+          <div class="profile-btn edit-btn" id="editProfileBtn"><i class="fas fa-edit"></i> Edit Profile</div>
+        <% } else if (currentUser.isAdmin) { %>
+          <div class="profile-btn more-btn" id="adminActions"><i class="fas fa-cog"></i> Admin Actions</div>
+        <% } %>
+      </div>
     </div>
 
-    <script>
-        document.getElementById('messageBtn').addEventListener('click', () => {
-            window.location.href = '/private-chat/<%= profileUser._id %>';
-        });
-        
-        <% if (user._id.toString() === profileUser._id.toString()) { %>
-        document.getElementById('editProfileBtn').addEventListener('click', () => {
-            window.location.href = '/edit-profile';
-        });
-        <% } %>
-    </script>
+    <div class="profile-body">
+      <div class="section-title">Profile Information</div>
+      <div class="profile-details">
+        <div class="detail-item">
+          <div class="detail-label">Full Name</div>
+          <div class="detail-value"><%= profileUser.profile?.name || 'Not provided' %></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Phone Number</div>
+          <div class="detail-value"><%= profileUser.profile?.phone || 'Not provided' %></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Status</div>
+          <div class="detail-value">
+            <span class="<%= profileUser.status === 'active' ? 'text-green-600' : profileUser.status === 'suspended' ? 'text-yellow-600' : 'text-red-600' %>">
+              <%= profileUser.status.charAt(0).toUpperCase() + profileUser.status.slice(1) %>
+            </span>
+          </div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Member Since</div>
+          <div class="detail-value"><%= new Date(profileUser.createdAt).toLocaleDateString() %></div>
+        </div>
+      </div>
+
+      <div class="section-title">Bio</div>
+      <div class="bio-content"><%= profileUser.profile?.bio || 'No bio provided' %></div>
+
+      <div class="section-title">Statistics</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value"><%= (await Session.countDocuments({ userId: profileUser._id })) || 0 %></div>
+          <div class="stat-label">Sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value"><%= (await Contact.countDocuments({ sessionId: { $in: (await Session.find({ userId: profileUser._id })).map(s => s.sessionId) } })) || 0 %></div>
+          <div class="stat-label">Contacts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value"><%= (await Download.countDocuments({ sessionId: { $in: (await Session.find({ userId: profileUser._id })).map(s => s.sessionId) } })) || 0 %></div>
+          <div class="stat-label">Downloads</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value"><%= (await Message.countDocuments({ userId: profileUser._id })) || 0 %></div>
+          <div class="stat-label">Messages</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('messageBtn').addEventListener('click', () => {
+      window.location.href = `/private-chat/<%= profileUser._id %>`;
+    });
+    <% if (currentUser._id.toString() === profileUser._id.toString()) { %>
+      document.getElementById('editProfileBtn').addEventListener('click', () => {
+        window.location.href = '/edit-profile';
+      });
+    <% } %>
+  </script>
 </body>
 </html>
