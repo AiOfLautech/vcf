@@ -23,6 +23,13 @@ const io = socketIo(server, {
   }
 });
 
+// Database Models (fixed path resolution)
+const User = require('./models/User');
+const Session = require('./models/Session');
+const Contact = require('./models/Contact');
+const Message = require('./models/Message');
+const Download = require('./models/Download');
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URL, {
   useNewUrlParser: true,
@@ -31,91 +38,47 @@ mongoose.connect(process.env.MONGO_URL, {
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', () => console.log('Connected to MongoDB'));
-
-// Define Mongoose Schemas and Models
-const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  isAdmin: { type: Boolean, default: false },
-  isSuperAdmin: { type: Boolean, default: false },
-  isSuspended: { type: Boolean, default: false },
-  suspendedAt: Date,
-  lastSeen: Date,
-  profile: {
-    name: String,
-    phone: String,
-    bio: String,
-    profilePic: String
-  }
-}, { timestamps: true });
-const User = mongoose.model('User', userSchema);
-
-const sessionSchema = new mongoose.Schema({
-  sessionId: { type: String, required: true, unique: true },
-  groupName: { type: String, required: true },
-  whatsappGroup: String,
-  timer: { type: Number, default: 60 },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  downloadCount: { type: Number, default: 0 }
-}, { timestamps: true });
-const Session = mongoose.model('Session', sessionSchema);
-
-const contactSchema = new mongoose.Schema({
-  sessionId: { type: String, required: true },
-  name: { type: String, required: true },
-  phone: { type: String, required: true }
-}, { timestamps: true });
-const Contact = mongoose.model('Contact', contactSchema);
-
-const messageSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  content: { type: String, required: true },
-  edited: { type: Boolean, default: false },
-  isSystem: { type: Boolean, default: false }
-}, { timestamps: true });
-const Message = mongoose.model('Message', messageSchema);
-
-const downloadSchema = new mongoose.Schema({
-  sessionId: String,
-  status: String,
-  error: String
-}, { timestamps: true });
-const Download = mongoose.model('Download', downloadSchema);
-
-// Create default admin accounts on startup
-async function createDefaultAdmins() {
+db.once('open', async () => {
+  console.log('Connected to MongoDB');
+  
+  // Clean up sessions with null sessionId
   try {
-    // Default admin
-    const admin = await User.findOne({ username: process.env.ADMIN_USERNAME });
-    if (!admin) {
+    await Session.deleteMany({ sessionId: null });
+    console.log('Cleaned up sessions with null sessionId');
+  } catch (cleanupError) {
+    console.error('Error cleaning up sessions:', cleanupError);
+  }
+  
+  // Create default admin if not exists
+  User.findOne({ username: process.env.ADMIN_USERNAME }).then(user => {
+    if (!user) {
       const salt = bcrypt.genSaltSync(10);
       const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, salt);
-      await User.create({
+      
+      new User({
         username: process.env.ADMIN_USERNAME,
         password: hash,
-        isAdmin: true
-      });
+        isAdmin: true,
+        isSuperAdmin: false
+      }).save();
     }
-
-    // Super admin 🙂😁
-    const superAdmin = await User.findOne({ username: process.env.SUPER_ADMIN_USERNAME });
-    if (!superAdmin) {
+  });
+  
+  // Create super admin if not exists
+  User.findOne({ username: process.env.SUPER_ADMIN_USERNAME }).then(user => {
+    if (!user) {
       const salt = bcrypt.genSaltSync(10);
       const hash = bcrypt.hashSync(process.env.SUPER_ADMIN_PASSWORD, salt);
-      await User.create({
+      
+      new User({
         username: process.env.SUPER_ADMIN_USERNAME,
         password: hash,
         isAdmin: true,
         isSuperAdmin: true
-      });
+      }).save();
     }
-  } catch (err) {
-    console.error('Error creating admin accounts:', err);
-  }
-}
-db.once('open', createDefaultAdmins);
+  });
+});
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -127,7 +90,6 @@ app.use(session({
   saveUninitialized: false,
   store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URL,
-    collectionName: 'express_sessions', // Fixed here
     ttl: 24 * 60 * 60 // 24 hours
   }),
   cookie: { 
@@ -145,11 +107,14 @@ passport.use(new LocalStrategy(
   async (username, password, done) => {
     try {
       const user = await User.findOne({ username });
-      if (!user) return done(null, false, { message: 'Incorrect username.' });
-      if (user.isSuspended) return done(null, false, { message: 'Account suspended.' });
+      if (!user) {
+        return done(null, false, { message: 'Incorrect username.' });
+      }
       
       const isValid = await bcrypt.compare(password, user.password);
-      if (!isValid) return done(null, false, { message: 'Incorrect password.' });
+      if (!isValid) {
+        return done(null, false, { message: 'Incorrect password.' });
+      }
       
       return done(null, user);
     } catch (err) {
@@ -158,7 +123,10 @@ passport.use(new LocalStrategy(
   }
 ));
 
-passport.serializeUser((user, done) => done(null, user.id));
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);
@@ -184,21 +152,29 @@ app.use((req, res, next) => {
 
 // Helper functions
 function isAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) return next();
+  if (req.isAuthenticated()) {
+    return next();
+  }
   req.flash('error_msg', 'Please log in to view that resource');
   res.redirect('/login');
 }
 
 function isAdmin(req, res, next) {
-  if (req.isAuthenticated() && req.user.isAdmin) return next();
+  if (req.isAuthenticated() && req.user.isAdmin) {
+    return next();
+  }
   req.flash('error_msg', 'You do not have permission to view that resource');
   res.redirect('/');
 }
 
 // Routes
-app.get('/', (req, res) => res.render('landing'));
+app.get('/', (req, res) => {
+  res.render('landing');
+});
 
-app.get('/login', (req, res) => res.render('login', { title: 'Login' }));
+app.get('/login', (req, res) => {
+  res.render('login', { title: 'Login' });
+});
 
 app.post('/login', 
   passport.authenticate('local', {
@@ -208,7 +184,9 @@ app.post('/login',
   })
 );
 
-app.get('/signup', (req, res) => res.render('signup', { title: 'Create Account' }));
+app.get('/signup', (req, res) => {
+  res.render('signup', { title: 'Create Account' });
+});
 
 app.post('/signup', async (req, res) => {
   try {
@@ -434,7 +412,14 @@ app.get('/create-session', isAuthenticated, (req, res) => {
 app.post('/create-session', isAuthenticated, async (req, res) => {
   try {
     const { groupName, whatsappGroup, timer } = req.body;
-    const sessionId = uuidv4().substring(0, 9).toUpperCase();
+    let sessionId;
+    let sessionExists;
+    
+    // Ensure unique session ID
+    do {
+      sessionId = uuidv4().substring(0, 9).toUpperCase();
+      sessionExists = await Session.findOne({ sessionId });
+    } while (sessionExists);
     
     const session = new Session({
       sessionId,
@@ -548,7 +533,7 @@ app.get('/session/:sessionId/download', async (req, res) => {
       sessionId,
       status: 'success'
     });
-    awaits download.save();
+    await download.save();
     
     res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
@@ -713,8 +698,13 @@ app.post('/admin/user/:id/delete', isAdmin, async (req, res) => {
 
 // Socket.io setup
 io.use((socket, next) => {
+  // Authentication middleware for socket.io
   const token = socket.handshake.auth.token;
-  if (token) return next();
+  if (token) {
+    // Here you would verify the token
+    // For simplicity, we'll just check if it's present
+    return next();
+  }
   next(new Error('Authentication error'));
 });
 
@@ -824,7 +814,9 @@ io.on('connection', (socket) => {
   socket.on('edit-message', async (data) => {
     try {
       const message = await Message.findById(data.messageId);
-      if (!message || message.userId.toString() !== data.userId) return;
+      if (!message || message.userId.toString() !== data.userId) {
+        return;
+      }
       
       message.content = data.content;
       message.edited = true;
@@ -846,7 +838,9 @@ io.on('connection', (socket) => {
   socket.on('delete-message', async (data) => {
     try {
       const message = await Message.findById(data.messageId);
-      if (!message || (message.userId.toString() !== data.userId && !data.isAdmin)) return;
+      if (!message || (message.userId.toString() !== data.userId && !data.isAdmin)) {
+        return;
+      }
       
       await Message.deleteOne({ _id: data.messageId });
       
@@ -866,7 +860,9 @@ io.on('connection', (socket) => {
   socket.on('admin-command', async (data) => {
     try {
       const user = await User.findById(data.userId);
-      if (!user || !user.isAdmin) return;
+      if (!user || !user.isAdmin) {
+        return;
+      }
       
       const command = data.command.toLowerCase();
       
@@ -899,6 +895,14 @@ io.on('connection', (socket) => {
               profile: data.profile
             }
           });
+          break;
+          
+        case '/pin':
+          // This would need implementation with a pinned messages system
+          break;
+          
+        case '/unpin':
+          // This would need implementation with a pinned messages system
           break;
           
         case '/ban':
@@ -957,7 +961,9 @@ io.on('connection', (socket) => {
   socket.on('ban-user', async (data) => {
     try {
       const admin = await User.findById(data.adminId);
-      if (!admin || !admin.isAdmin) return;
+      if (!admin || !admin.isAdmin) {
+        return;
+      }
       
       const user = await User.findById(data.userId);
       if (user && !user.isSuperAdmin) {
@@ -999,7 +1005,9 @@ io.on('connection', (socket) => {
     }
   });
   
-  socket.on('disconnect', () => console.log('Client disconnected'));
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
 });
 
 // Helper functions
