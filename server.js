@@ -1,84 +1,24 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
-const MongoStore = require('connect-mongo');
 const mongoose = require('mongoose');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcryptjs');
+const MongoStore = require('connect-mongo');
+const flash = require('connect-flash');
+const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const http = require('http');
-const socketIo = require('socket.io');
-const axios = require('axios');
 const moment = require('moment');
-const path = require('path');
-const flash = require('connect-flash');
-
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
+const io = require('socket.io')(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
   }
 });
-
-// Database Models
-const UserSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  isAdmin: { type: Boolean, default: false },
-  isSuperAdmin: { type: Boolean, default: false },
-  isSuspended: { type: Boolean, default: false },
-  suspendedAt: Date,
-  lastSeen: Date,
-  profile: {
-    name: String,
-    phone: String,
-    bio: String,
-    profilePic: String
-  }
-});
-
-const SessionSchema = new mongoose.Schema({
-  sessionId: { type: String, required: true, unique: true },
-  groupName: { type: String, required: true },
-  whatsappGroup: String,
-  timer: { type: Number, default: 60 },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  createdAt: { type: Date, default: Date.now },
-  downloadCount: { type: Number, default: 0 }
-});
-
-const ContactSchema = new mongoose.Schema({
-  sessionId: String,
-  name: String,
-  phone: String,
-  createdAt: { type: Date, default: Date.now }
-});
-
-const MessageSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  content: String,
-  recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  createdAt: { type: Date, default: Date.now },
-  edited: { type: Boolean, default: false },
-  isSystem: { type: Boolean, default: false }
-});
-
-const DownloadSchema = new mongoose.Schema({
-  sessionId: String,
-  status: String,
-  error: String,
-  createdAt: { type: Date, default: Date.now }
-});
-
-// Create models
-const User = mongoose.model('User', UserSchema);
-const Session = mongoose.model('Session', SessionSchema);
-const Contact = mongoose.model('Contact', ContactSchema);
-const Message = mongoose.model('Message', MessageSchema);
-const Download = mongoose.model('Download', DownloadSchema);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URL, {
@@ -88,47 +28,18 @@ mongoose.connect(process.env.MONGO_URL, {
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', async () => {
+db.once('open', () => {
   console.log('Connected to MongoDB');
-  
-  // Cleanup sessions with null sessionId
-  await Session.deleteMany({ sessionId: null });
-  
-  // Create default admin if not exists
-  User.findOne({ username: process.env.ADMIN_USERNAME }).then(user => {
-    if (!user) {
-      const salt = bcrypt.genSaltSync(10);
-      const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, salt);
-      
-      new User({
-        username: process.env.ADMIN_USERNAME,
-        password: hash,
-        isAdmin: true,
-        isSuperAdmin: false
-      }).save();
-    }
-  });
-  
-  // Create super admin if not exists
-  User.findOne({ username: process.env.SUPER_ADMIN_USERNAME }).then(user => {
-    if (!user) {
-      const salt = bcrypt.genSaltSync(10);
-      const hash = bcrypt.hashSync(process.env.SUPER_ADMIN_PASSWORD, salt);
-      
-      new User({
-        username: process.env.SUPER_ADMIN_USERNAME,
-        password: hash,
-        isAdmin: true,
-        isSuperAdmin: true
-      }).save();
-    }
-  });
+  createDefaultGroup();
 });
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.static('public'));
 app.use(flash());
+
+// Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -144,10 +55,19 @@ app.use(session({
   }
 }));
 
-// Passport config
+// Passport configuration
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Models
+const User = require('./models/User');
+const Session = require('./models/Session');
+const Contact = require('./models/Contact');
+const Message = require('./models/Message');
+const Download = require('./models/Download');
+const Group = require('./models/Group');
+
+// Passport Local Strategy
 passport.use(new LocalStrategy(
   async (username, password, done) => {
     try {
@@ -156,8 +76,8 @@ passport.use(new LocalStrategy(
         return done(null, false, { message: 'Incorrect username.' });
       }
       
-      const isValid = await bcrypt.compare(password, user.password);
-      if (!isValid) {
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
         return done(null, false, { message: 'Incorrect password.' });
       }
       
@@ -181,12 +101,83 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// Set EJS as template engine
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-app.use(express.static(path.join(__dirname, 'public')));
+// AI Models Configuration
+const aiModels = {
+  gpt: 'https://apis.davidcyriltech.my.id/ai/chatbot?query=',
+  llama: 'https://apis.davidcyriltech.my.id/ai/llama3?text=',
+  deepseek: 'https://apis.davidcyriltech.my.id/ai/deepseek-v3?text=',
+  deepseekr1: 'https://apis.davidcyriltech.my.id/ai/deepseek-r1?text=',
+  metaai: 'https://apis.davidcyriltech.my.id/ai/metaai?text=',
+  gpt4: 'https://apis.davidcyriltech.my.id/ai/gpt4?text=',
+  claude: 'https://apis.davidcyriltech.my.id/ai/claudeSonnet?text=',
+  uncensored: 'https://apis.davidcyriltech.my.id/ai/uncensor?text=',
+  pixtral: 'https://apis.davidcyriltech.my.id/ai/pixtral?text=',
+  gemma: 'https://apis.davidcyriltech.my.id/ai/gemma?text=',
+  qvq: 'https://apis.davidcyriltech.my.id/ai/qvq?text=',
+  queen2: 'https://apis.davidcyriltech.my.id/ai/qwen2Coder?text=',
+  gemini: 'https://api.giftedtech.web.id/api/ai/geminiai?apikey=gifted&q=',
+  wwdgpt: 'https://api.giftedtech.web.id/api/ai/wwdgpt?apikey=gifted&prompt=',
+  stableDiffusion: 'https://api.giftedtech.web.id/api/ai/sd?apikey=gifted&prompt=',
+  text2img: 'https://api.giftedtech.web.id/api/ai/text2img?apikey=gifted&prompt='
+};
 
-// Global variables
+// Helper function to get AI response
+async function getAIResponse(model, query) {
+  try {
+    const url = aiModels[model] + encodeURIComponent(query);
+    const response = await axios.get(url);
+    
+    let aiResponse = '';
+    
+    switch(model) {
+      case 'gpt':
+        aiResponse = response.data.result;
+        break;
+      case 'llama':
+      case 'deepseek':
+      case 'deepseekr1':
+      case 'metaai':
+      case 'claude':
+      case 'uncensored':
+      case 'pixtral':
+      case 'gemma':
+      case 'qvq':
+      case 'queen2':
+        aiResponse = response.data.response || response.data.message;
+        break;
+      case 'gpt4':
+        aiResponse = response.data.message;
+        break;
+      case 'gemini':
+      case 'wwdgpt':
+        aiResponse = response.data.result;
+        break;
+      default:
+        aiResponse = response.data;
+    }
+    
+    return {
+      creator: "Contact Gain",
+      status: 200,
+      success: true,
+      result: aiResponse
+    };
+  } catch (error) {
+    console.error('AI API error:', error);
+    return {
+      creator: "Contact Gain",
+      status: 500,
+      success: false,
+      error: "Failed to get AI response. Please try again later."
+    };
+  }
+}
+
+// EJS setup
+app.set('view engine', 'ejs');
+app.set('views', './views');
+
+// Middleware to make user available to all views
 app.use((req, res, next) => {
   res.locals.user = req.user;
   res.locals.success_msg = req.flash('success_msg');
@@ -195,30 +186,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Helper functions
-function isAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  req.flash('error_msg', 'Please log in to view that resource');
-  res.redirect('/login');
-}
-
-function isAdmin(req, res, next) {
-  if (req.isAuthenticated() && req.user.isAdmin) {
-    return next();
-  }
-  req.flash('error_msg', 'You do not have permission to view that resource');
-  res.redirect('/');
-}
-
 // Routes
 app.get('/', (req, res) => {
-  res.render('landing');
+  if (req.user) {
+    res.redirect('/dashboard');
+  } else {
+    res.render('landing');
+  }
 });
 
 app.get('/login', (req, res) => {
-  res.render('login', { title: 'Login' });
+  res.render('login', { 
+    title: 'Login | Contact Gain',
+    message: req.flash('error')
+  });
 });
 
 app.post('/login', 
@@ -230,42 +211,45 @@ app.post('/login',
 );
 
 app.get('/signup', (req, res) => {
-  res.render('signup', { title: 'Create Account' });
+  res.render('signup', { 
+    title: 'Sign Up | Contact Gain',
+    message: req.flash('error')
+  });
 });
 
 app.post('/signup', async (req, res) => {
+  const { username, password, email } = req.body;
+  
   try {
-    const { username, password, confirmPassword } = req.body;
-    
-    if (password !== confirmPassword) {
-      req.flash('error', 'Passwords do not match');
-      return res.redirect('/signup');
-    }
-    
-    const existingUser = await User.findOne({ username });
+    // Check if user exists
+    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
     if (existingUser) {
-      req.flash('error', 'Username already exists');
+      req.flash('error', 'Username or email already exists');
       return res.redirect('/signup');
     }
     
-    const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync(password, salt);
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
     
-    const newUser = new User({
+    // Create user
+    const user = new User({
       username,
-      password: hash,
+      password: hashedPassword,
+      email,
       profile: {
         name: username,
-        bio: 'Hello, I\'m using Contact Gain!'
+        bio: "Hello, I'm using Contact Gain!"
       }
     });
     
-    await newUser.save();
+    await user.save();
+    
     req.flash('success_msg', 'You are now registered and can log in');
     res.redirect('/login');
   } catch (err) {
-    console.error('Signup error:', err);
-    req.flash('error', 'Error registering user');
+    console.error(err);
+    req.flash('error', 'Error occurred during registration');
     res.redirect('/signup');
   }
 });
@@ -273,162 +257,154 @@ app.post('/signup', async (req, res) => {
 app.get('/logout', (req, res) => {
   req.logout(() => {
     req.flash('success_msg', 'You are logged out');
-    res.redirect('/');
+    res.redirect('/login');
   });
 });
 
 app.get('/dashboard', isAuthenticated, async (req, res) => {
   try {
-    const sessions = await Session.find().sort({ createdAt: -1 }).limit(10);
-    const totalUsers = await User.countDocuments();
-    const totalSessions = await Session.countDocuments();
-    const totalContacts = await Contact.countDocuments();
+    const sessions = await Session.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    const groups = await Group.find({ members: req.user._id }).sort({ createdAt: -1 });
     
-    res.render('dashboard', {
-      title: 'Dashboard',
+    // Update user's last seen
+    await User.findByIdAndUpdate(req.user._id, { lastSeen: new Date() });
+    
+    res.render('dashboard', { 
+      title: 'Dashboard | Contact Gain',
       sessions,
-      totalUsers,
-      totalSessions,
-      totalContacts
+      groups
     });
   } catch (err) {
-    console.error('Dashboard error:', err);
-    res.render('error', {
-      title: 'Error',
-      message: 'Failed to load dashboard'
-    });
+    console.error(err);
+    res.redirect('/');
   }
+});
+
+app.get('/admin/login', (req, res) => {
+  res.render('admin-login', { 
+    title: 'Admin Login | Contact Gain',
+    message: req.flash('error')
+  });
+});
+
+app.post('/admin/login', async (req, res) => {
+  const { username, password } = req.body;
+  
+  // Check if user is admin
+  if ((username === process.env.ADMIN_USERNAME || username === process.env.SUPER_ADMIN_USERNAME) && 
+      (password === process.env.ADMIN_PASSWORD || password === process.env.SUPER_ADMIN_PASSWORD)) {
+    
+    // Create admin session
+    req.session.isAdmin = true;
+    req.session.isSuperAdmin = (username === process.env.SUPER_ADMIN_USERNAME);
+    req.session.username = username;
+    
+    return res.redirect('/admin');
+  }
+  
+  req.flash('error', 'Invalid admin credentials');
+  res.redirect('/admin/login');
+});
+
+app.get('/admin', isAdmin, async (req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+    const sessions = await Session.find().sort({ createdAt: -1 });
+    const messages = await Message.find().sort({ createdAt: -1 }).limit(50);
+    const groups = await Group.find().populate('members').sort({ createdAt: -1 });
+    
+    res.render('admin', { 
+      title: 'Admin Dashboard | Contact Gain',
+      users,
+      sessions,
+      messages,
+      groups,
+      isSuperAdmin: req.session.isSuperAdmin
+    });
+  } catch (err) {
+    console.error(err);
+    res.redirect('/admin/login');
+  }
+});
+
+app.get('/admin/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/admin/login');
+  });
 });
 
 app.get('/profile/:id', isAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
-      return res.render('error', {
-        title: 'Not Found',
-        message: 'User not found'
+      return res.status(404).render('error', {
+        title: 'User Not Found',
+        message: 'The user you are looking for does not exist.'
       });
     }
     
-    // Get last seen information
-    let lastSeen = 'Online';
-    if (user.lastSeen) {
-      const now = moment();
-      const diff = moment.duration(now.diff(user.lastSeen));
-      
-      if (diff.asHours() > 24) {
-        lastSeen = moment(user.lastSeen).format('MMM D, YYYY');
-      } else if (diff.asHours() > 1) {
-        lastSeen = `${Math.floor(diff.asHours())} hours ago`;
-      } else if (diff.asMinutes() > 1) {
-        lastSeen = `${Math.floor(diff.asMinutes())} minutes ago`;
-      } else {
-        lastSeen = 'Just now';
-      }
-    }
+    // Get user's sessions
+    const sessions = await Session.find({ userId: user._id }).sort({ createdAt: -1 });
     
-    res.render('profile', {
-      title: `${user.profile?.name || user.username}'s Profile`,
+    res.render('profile', { 
+      title: `${user.username} | Contact Gain`,
       profileUser: user,
-      lastSeen
+      sessions
     });
   } catch (err) {
-    console.error('Profile error:', err);
-    res.render('error', {
-      title: 'Error',
-      message: 'Failed to load profile'
-    });
+    console.error(err);
+    res.redirect('/');
   }
 });
 
 app.get('/edit-profile', isAuthenticated, (req, res) => {
-  res.render('edit-profile', {
-    title: 'Edit Profile'
+  res.render('edit-profile', { 
+    title: 'Edit Profile | Contact Gain'
   });
 });
 
-app.post('/edit-profile', isAuthenticated, async (req, res) => {
+app.post('/update-profile', isAuthenticated, async (req, res) => {
   try {
     const { name, phone, bio, profilePic } = req.body;
-    
-    // Update user profile
     await User.findByIdAndUpdate(req.user._id, {
-      profile: {
-        name,
-        phone,
-        bio,
-        profilePic
+      profile: { 
+        name, 
+        phone, 
+        bio, 
+        profilePic 
       }
     });
     
-    req.flash('success_msg', 'Profile updated successfully');
-    res.redirect(`/profile/${req.user._id}`);
+    res.redirect('/profile/' + req.user._id);
   } catch (err) {
     console.error('Profile update error:', err);
-    req.flash('error', 'Failed to update profile');
-    res.redirect('/edit-profile');
+    res.status(500).send('Internal server error');
   }
 });
 
 app.get('/chat', isAuthenticated, async (req, res) => {
   try {
-    // Get recent conversations
-    const conversations = await Message.aggregate([
-      { $match: { 
-        $or: [
-          { userId: req.user._id },
-          { recipient: req.user._id }
-        ]
-      }},
-      { $sort: { createdAt: -1 }},
-      { $group: {
-        _id: {
-          $cond: [
-            { $gt: [{ $toString: "$userId" }, { $toString: "$recipient" }] },
-            { sender: "$recipient", receiver: "$userId" },
-            { sender: "$userId", receiver: "$recipient" }
-          ]
-        },
-        lastMessage: { $first: "$$ROOT" }
-      }}
-    ]);
+    // Get all users for private messaging
+    const users = await User.find({ _id: { $ne: req.user._id } });
     
-    // Format conversations for display
-    const formattedConversations = await Promise.all(conversations.map(async conv => {
-      const otherUserId = conv._id.sender.toString() === req.user._id.toString() ? 
-        conv._id.receiver : conv._id.sender;
-      
-      const otherUser = await User.findById(otherUserId);
-      return {
-        ...conv,
-        otherUser
-      };
-    }));
+    // Update user's last seen
+    await User.findByIdAndUpdate(req.user._id, { lastSeen: new Date() });
     
-    res.render('chat', {
-      title: 'Community Chat',
-      conversations: formattedConversations
+    res.render('chat', { 
+      title: 'Community Chat | Contact Gain',
+      users
     });
   } catch (err) {
-    console.error('Chat error:', err);
-    res.render('error', {
-      title: 'Error',
-      message: 'Failed to load chat'
-    });
+    console.error(err);
+    res.redirect('/');
   }
 });
 
 app.get('/private-chat/:userId', isAuthenticated, async (req, res) => {
   try {
     const recipient = await User.findById(req.params.userId);
-    if (!recipient) {
-      return res.render('error', {
-        title: 'Not Found',
-        message: 'User not found'
-      });
-    }
+    if (!recipient) return res.status(404).send('User not found');
     
-    // Get messages between users
     const messages = await Message.find({
       $or: [
         { userId: req.user._id, recipient: recipient._id },
@@ -436,113 +412,138 @@ app.get('/private-chat/:userId', isAuthenticated, async (req, res) => {
       ]
     }).sort({ createdAt: 1 });
     
-    res.render('private-chat', {
-      title: `Chat with ${recipient.profile?.name || recipient.username}`,
+    // Update user's last seen
+    await User.findByIdAndUpdate(req.user._id, { lastSeen: new Date() });
+    
+    res.render('chat', { 
+      title: `Chat with ${recipient.username} | Contact Gain`,
+      privateChat: true,
       recipient,
       messages
     });
   } catch (err) {
     console.error('Private chat error:', err);
-    res.render('error', {
-      title: 'Error',
-      message: 'Failed to load private chat'
-    });
+    res.status(500).send('Internal server error');
   }
 });
 
-app.get('/create-session', isAuthenticated, (req, res) => {
-  res.render('create-session', { title: 'Create Session' });
+app.get('/conversations', isAuthenticated, async (req, res) => {
+  try {
+    // Get all conversations for the user
+    const conversations = await Message.aggregate([
+      {
+        $match: {
+          $or: [
+            { userId: req.user._id },
+            { recipient: req.user._id }
+          ]
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      },
+      {
+        $group: {
+          _id: {
+            $cond: [
+              { $eq: ["$userId", req.user._id] },
+              "$recipient",
+              "$userId"
+            ]
+          },
+          lastMessage: { $first: "$$ROOT" }
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "recipient"
+        }
+      },
+      {
+        $unwind: "$recipient"
+      },
+      {
+        $sort: { "lastMessage.createdAt": -1 }
+      }
+    ]);
+    
+    res.render('conversations', { 
+      title: 'Conversations | Contact Gain',
+      conversations
+    });
+  } catch (err) {
+    console.error('Conversations error:', err);
+    res.status(500).send('Internal server error');
+  }
 });
 
-app.post('/create-session', isAuthenticated, async (req, res) => {
+app.get('/api', (req, res) => {
+  res.render('api', { 
+    title: 'API Documentation | Contact Gain'
+  });
+});
+
+app.get('/terminal', isAuthenticated, (req, res) => {
+  res.render('terminal', { 
+    title: 'AI Terminal | Contact Gain'
+  });
+});
+
+// API Endpoints
+app.post('/api/create-session', isAuthenticated, async (req, res) => {
   try {
     const { groupName, whatsappGroup, timer } = req.body;
     
-    // Generate unique session ID with retry logic
-    let sessionId;
-    let sessionExists;
-    let attempts = 0;
-    const maxAttempts = 5;
-    
-    do {
-      sessionId = uuidv4().substring(0, 9).toUpperCase();
-      sessionExists = await Session.findOne({ sessionId });
-      attempts++;
-    } while (sessionExists && attempts < maxAttempts);
-    
-    if (sessionExists) {
-      req.flash('error', 'Failed to generate unique session ID. Please try again.');
-      return res.redirect('/create-session');
+    if (!groupName) {
+      return res.status(400).json({ error: 'Group name is required' });
     }
+    
+    const sessionId = uuidv4().substring(0, 8).toUpperCase();
+    const expiresAt = new Date(Date.now() + (timer || 60) * 60 * 1000);
     
     const session = new Session({
       sessionId,
+      userId: req.user._id,
       groupName,
       whatsappGroup,
-      timer: parseInt(timer) || 60,
-      createdBy: req.user._id
+      timer: timer || 60,
+      expiresAt
     });
     
     await session.save();
     
-    req.flash('success_msg', 'Session created successfully');
-    res.redirect(`/session/${sessionId}`);
+    res.json({
+      sessionLink: `${req.protocol}://${req.get('host')}/session/${sessionId}`,
+      sessionId
+    });
   } catch (err) {
     console.error('Session creation error:', err);
-    req.flash('error', 'Failed to create session');
-    res.redirect('/create-session');
-  }
-});
-
-app.get('/session/:sessionId', async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    const sessionData = await Session.findOne({ sessionId });
-    
-    if (!sessionData) {
-      return res.render('error', {
-        title: 'Session Not Found',
-        message: 'The session you are looking for does not exist'
-      });
-    }
-    
-    // Calculate remaining time
-    const now = new Date();
-    const expiresAt = new Date(sessionData.createdAt);
-    expiresAt.setMinutes(expiresAt.getMinutes() + sessionData.timer);
-    const remainingSeconds = Math.max(0, Math.floor((expiresAt - now) / 1000));
-    
-    res.render('session', {
-      title: sessionData.groupName,
-      session: sessionData,
-      remainingSeconds,
-      totalSeconds: sessionData.timer * 60
-    });
-  } catch (err) {
-    console.error('Session error:', err);
-    res.render('error', {
-      title: 'Error',
-      message: 'Failed to load session'
-    });
+    res.status(500).json({ error: 'Failed to create session' });
   }
 });
 
 app.post('/session/:sessionId/contact', async (req, res) => {
   try {
-    const { sessionId } = req.params;
     const { name, phone } = req.body;
+    const { sessionId } = req.params;
+    
+    if (!name || !phone) {
+      return res.status(400).json({ success: false, error: 'Name and phone are required' });
+    }
     
     const sessionData = await Session.findOne({ sessionId });
     if (!sessionData) {
       return res.status(404).json({ success: false, error: 'Session not found' });
     }
     
-    // Validate contact data
-    if (!name || !phone) {
-      return res.status(400).json({ success: false, error: 'Name and phone are required' });
+    // Check if timer has expired
+    if (new Date() > sessionData.expiresAt) {
+      return res.status(400).json({ success: false, error: 'Session timer has expired' });
     }
     
-    // Create contact
     const contact = new Contact({
       sessionId,
       name,
@@ -553,19 +554,16 @@ app.post('/session/:sessionId/contact', async (req, res) => {
     
     res.json({ success: true });
   } catch (err) {
-    console.error('Contact error:', err);
-    res.status(500).json({ success: false, error: 'Failed to add contact' });
+    console.error('Contact addition error:', err);
+    res.status(500).json({ error: 'Failed to add contact.' });
   }
 });
 
 app.get('/session/:sessionId/download', async (req, res) => {
+  const { sessionId } = req.params;
   try {
-    const { sessionId } = req.params;
     const sessionData = await Session.findOne({ sessionId });
-    
-    if (!sessionData) {
-      return res.status(404).send('Session not found');
-    }
+    if (!sessionData) return res.status(404).send('Session not found.');
     
     sessionData.downloadCount += 1;
     await sessionData.save();
@@ -578,14 +576,14 @@ app.get('/session/:sessionId/download', async (req, res) => {
       vcfData += `VERSION:3.0\n`;
       vcfData += `FN:${contact.name}\n`;
       vcfData += `TEL;TYPE=CELL:${contact.phone}\n`;
-      vcfData += `END:VCARD\n\n`;
+      vcfData += `END:VCARD\n`;
     });
     
     const fileName = `${sessionData.groupName.replace(/[^a-z0-9]/gi, '_')}_${sessionId}.vcf`;
     
-    const download = new Download({
-      sessionId,
-      status: 'success'
+    const download = new Download({ 
+      sessionId, 
+      status: 'success' 
     });
     await download.save();
     
@@ -594,494 +592,413 @@ app.get('/session/:sessionId/download', async (req, res) => {
     res.send(vcfData || 'No contacts were added.');
   } catch (err) {
     console.error('Download error:', err);
-    const download = new Download({
-      sessionId,
-      status: 'failed',
-      error: err.message
+    const download = new Download({ 
+      sessionId, 
+      status: 'failed', 
+      error: err.message 
     });
     await download.save();
     res.status(500).send('Internal server error');
   }
 });
 
-app.get('/api', (req, res) => {
-  res.render('api', { title: 'API Documentation' });
+// Admin API Endpoints
+app.post('/admin/api/ban-user', isAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    await User.findByIdAndUpdate(userId, { isBanned: true, bannedAt: new Date() });
+    io.emit('userBanned', { userId });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Ban user error:', err);
+    res.status(500).json({ error: 'Failed to ban user' });
+  }
 });
 
-// AI API endpoints
-app.post('/api/ai', isAuthenticated, async (req, res) => {
+app.post('/admin/api/unban-user', isAdmin, async (req, res) => {
   try {
-    const { model, query } = req.body;
-    
-    if (!model || !query) {
-      return res.status(400).json({
-        creator: "Contact Gain",
-        status: 400,
-        success: false,
-        error: "Model and query are required"
-      });
-    }
-    
-    // Call the appropriate AI API
-    let apiUrl = '';
-    let responseKey = '';
-    
-    switch (model) {
-      case 'gpt':
-        apiUrl = `https://apis.davidcyriltech.my.id/ai/chatbot?query=${encodeURIComponent(query)}`;
-        responseKey = 'result';
-        break;
-      case 'llama':
-        apiUrl = `https://apis.davidcyriltech.my.id/ai/llama3?text=${encodeURIComponent(query)}`;
-        responseKey = 'message';
-        break;
-      case 'deepseek':
-        apiUrl = `https://apis.davidcyriltech.my.id/ai/deepseek-v3?text=${encodeURIComponent(query)}`;
-        responseKey = 'response';
-        break;
-      case 'gemini':
-        apiUrl = `https://api.giftedtech.web.id/api/ai/geminiai?apikey=gifted&q=${encodeURIComponent(query)}`;
-        responseKey = 'result';
-        break;
-      default:
-        return res.status(400).json({
-          creator: "Contact Gain",
-          status: 400,
-          success: false,
-          error: "Invalid AI model specified"
-        });
-    }
-    
-    const aiResponse = await axios.get(apiUrl);
-    
-    if (aiResponse.data.success) {
-      res.json({
-        creator: "Contact Gain",
-        status: 200,
-        success: true,
-        result: aiResponse.data[responseKey]
-      });
-    } else {
-      res.status(400).json({
-        creator: "Contact Gain",
-        status: 400,
-        success: false,
-        error: "AI service returned an error"
-      });
-    }
+    const { userId } = req.body;
+    await User.findByIdAndUpdate(userId, { isBanned: false, bannedAt: null });
+    io.emit('userUnbanned', { userId });
+    res.json({ success: true });
   } catch (err) {
-    console.error('AI API error:', err);
+    console.error('Unban user error:', err);
+    res.status(500).json({ error: 'Failed to unban user' });
+  }
+});
+
+app.post('/admin/api/suspend-user', isAdmin, async (req, res) => {
+  try {
+    const { userId, duration } = req.body;
+    const suspendedUntil = new Date(Date.now() + duration * 60 * 1000);
+    
+    await User.findByIdAndUpdate(userId, { 
+      isSuspended: true, 
+      suspendedUntil,
+      suspendedAt: new Date()
+    });
+    
+    io.emit('userSuspended', { userId, suspendedUntil });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Suspend user error:', err);
+    res.status(500).json({ error: 'Failed to suspend user' });
+  }
+});
+
+app.post('/admin/api/unsuspend-user', isAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    await User.findByIdAndUpdate(userId, { 
+      isSuspended: false, 
+      suspendedUntil: null,
+      suspendedAt: null
+    });
+    
+    io.emit('userUnsuspended', { userId });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Unsuspend user error:', err);
+    res.status(500).json({ error: 'Failed to unsuspend user' });
+  }
+});
+
+app.post('/admin/api/delete-message', isAdmin, async (req, res) => {
+  try {
+    const { messageId } = req.body;
+    await Message.findByIdAndUpdate(messageId, { isDeleted: true });
+    io.emit('messageDeleted', { messageId });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete message error:', err);
+    res.status(500).json({ error: 'Failed to delete message' });
+  }
+});
+
+app.post('/admin/api/clear-chat', isAdmin, async (req, res) => {
+  try {
+    await Message.deleteMany({});
+    io.emit('chatCleared');
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Clear chat error:', err);
+    res.status(500).json({ error: 'Failed to clear chat' });
+  }
+});
+
+// AI API Endpoints
+app.post('/api/ai/gpt', async (req, res) => {
+  try {
+    const { query } = req.body;
+    const response = await getAIResponse('gpt', query);
+    res.json(response);
+  } catch (err) {
+    console.error('GPT API error:', err);
     res.status(500).json({
       creator: "Contact Gain",
       status: 500,
       success: false,
-      error: "Failed to process AI request"
+      error: "Failed to get AI response"
     });
   }
 });
 
-// Admin routes
-app.get('/admin', isAdmin, async (req, res) => {
+app.post('/api/ai/llama', async (req, res) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
-    const sessions = await Session.find().sort({ createdAt: -1 });
-    const totalUsers = await User.countDocuments();
-    const totalSessions = await Session.countDocuments();
-    const totalContacts = await Contact.countDocuments();
-    const totalDownloads = await Download.countDocuments();
-    
-    res.render('admin', {
-      title: 'Admin Dashboard',
-      users,
-      sessions,
-      totalUsers,
-      totalSessions,
-      totalContacts,
-      totalDownloads
-    });
+    const { query } = req.body;
+    const response = await getAIResponse('llama', query);
+    res.json(response);
   } catch (err) {
-    console.error('Admin dashboard error:', err);
-    res.render('error', {
-      title: 'Error',
-      message: 'Failed to load admin dashboard'
+    console.error('Llama API error:', err);
+    res.status(500).json({
+      creator: "Contact Gain",
+      status: 500,
+      success: false,
+      error: "Failed to get AI response"
     });
   }
 });
 
-app.post('/admin/user/:id/toggle-suspend', isAdmin, async (req, res) => {
+app.post('/api/ai/deepseek', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-    
-    user.isSuspended = !user.isSuspended;
-    user.suspendedAt = user.isSuspended ? new Date() : null;
-    await user.save();
-    
-    res.json({ 
-      success: true, 
-      isSuspended: user.isSuspended,
-      message: user.isSuspended ? 'User suspended successfully' : 'User unsuspended successfully'
+    const { query } = req.body;
+    const response = await getAIResponse('deepseek', query);
+    res.json(response);
+  } catch (err) {
+    console.error('Deepseek API error:', err);
+    res.status(500).json({
+      creator: "Contact Gain",
+      status: 500,
+      success: false,
+      error: "Failed to get AI response"
     });
-  } catch (err) {
-    console.error('User suspension error:', err);
-    res.status(500).json({ success: false, message: 'Failed to update user status' });
   }
 });
 
-app.post('/admin/user/:id/delete', isAdmin, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-    
-    // Don't allow deleting super admin
-    if (user.isSuperAdmin) {
-      return res.status(403).json({ success: false, message: 'Cannot delete super admin' });
-    }
-    
-    await User.deleteOne({ _id: req.params.id });
-    res.json({ success: true, message: 'User deleted successfully' });
-  } catch (err) {
-    console.error('User deletion error:', err);
-    res.status(500).json({ success: false, message: 'Failed to delete user' });
-  }
-});
-
-// Socket.io setup
-io.use((socket, next) => {
-  // Authentication middleware for socket.io
-  const token = socket.handshake.auth.token;
-  if (token) {
-    // Here you would verify the token
-    // For simplicity, we'll just check if it's present
-    return next();
-  }
-  next(new Error('Authentication error'));
-});
-
+// Socket.io for real-time chat
 io.on('connection', (socket) => {
   console.log('New client connected');
   
-  // Join user to their own room
-  socket.on('join', (userId) => {
-    socket.join(userId);
-    console.log(`User ${userId} joined their room`);
+  // Join community chat room
+  socket.join('community');
+  
+  // Handle typing indicator
+  socket.on('typing', (data) => {
+    socket.broadcast.to('community').emit('typing', {
+      userId: data.userId,
+      username: data.username
+    });
   });
   
-  // Join user to community chat room
-  socket.on('join-community', (userId) => {
-    socket.join('community');
-    console.log(`User ${userId} joined community chat`);
+  // Handle stop typing
+  socket.on('stopTyping', (data) => {
+    socket.broadcast.to('community').emit('stopTyping', {
+      userId: data.userId
+    });
   });
   
-  // Send message
-  socket.on('send-message', async (data) => {
+  // Handle message sending
+  socket.on('sendMessage', async (data) => {
     try {
-      // Check for AI command
-      if (data.content.startsWith('/GTP') || data.content.startsWith('@AI')) {
-        const query = data.content.replace('/GTP', '').replace('@AI', '').trim();
-        socket.emit('ai-request', {
-          userId: data.userId,
-          query: query,
-          model: 'gpt'
-        });
+      const { userId, content, recipient, isPrivate } = data;
+      
+      // Check if user is banned or suspended
+      const user = await User.findById(userId);
+      if (user.isBanned || (user.isSuspended && new Date() < user.suspendedUntil)) {
+        socket.emit('messageError', { error: 'You are not allowed to send messages' });
         return;
       }
       
-      // Create message in database
+      // Create message
       const message = new Message({
-        userId: data.userId,
-        content: data.content,
-        recipient: data.recipient
+        userId,
+        content,
+        recipient: recipient || null,
+        isPrivate: !!recipient
       });
       
       await message.save();
       
-      // Update last seen
-      await User.findByIdAndUpdate(data.userId, { lastSeen: new Date() });
-      
-      // Broadcast message to recipient or community
-      if (data.recipient) {
-        // Private message
-        io.to(data.recipient).emit('message', {
-          ...message.toObject(),
-          user: { 
-            _id: data.userId,
-            username: data.username,
-            profile: data.profile
-          }
+      // AI command handling
+      if (content.startsWith('/GTP') || content.startsWith('@AI')) {
+        const query = content.replace('/GTP', '').replace('@AI', '').trim();
+        const response = await getAIResponse('gpt', query);
+        
+        const aiMessage = new Message({
+          userId: 'ai-bot',
+          content: response.result,
+          isAI: true,
+          recipient: recipient || null,
+          isPrivate: !!recipient
         });
         
-        // Also send to sender for confirmation
-        socket.emit('message', {
-          ...message.toObject(),
-          user: { 
-            _id: data.userId,
-            username: data.username,
-            profile: data.profile
-          }
-        });
-      } else {
-        // Community message
-        io.to('community').emit('community-message', {
-          ...message.toObject(),
-          user: { 
-            _id: data.userId,
-            username: data.username,
-            profile: data.profile
-          }
-        });
+        await aiMessage.save();
+        io.to('community').emit('newMessage', aiMessage);
       }
       
-      // Typing indicator - clear after message is sent
-      io.to('community').emit('community-typing', {
-        userId: data.userId,
-        isTyping: false
-      });
-    } catch (err) {
-      console.error('Message error:', err);
-    }
-  });
-  
-  // Typing indicator
-  socket.on('typing', (data) => {
-    if (data.recipient) {
-      // Private chat typing
-      io.to(data.recipient).emit('typing', {
-        userId: data.userId,
-        isTyping: data.isTyping
-      });
-    } else {
-      // Community chat typing
-      io.to('community').emit('community-typing', {
-        userId: data.userId,
-        isTyping: data.isTyping,
-        username: data.username
-      });
-    }
-  });
-  
-  // Message editing
-  socket.on('edit-message', async (data) => {
-    try {
-      const message = await Message.findById(data.messageId);
-      if (!message || message.userId.toString() !== data.userId) {
-        return;
-      }
-      
-      message.content = data.content;
-      message.edited = true;
-      await message.save();
-      
-      // Broadcast edited message
-      if (message.recipient) {
-        io.to(message.recipient.toString()).emit('message-updated', message);
-        socket.emit('message-updated', message);
-      } else {
-        io.to('community').emit('community-message-updated', message);
-      }
-    } catch (err) {
-      console.error('Edit message error:', err);
-    }
-  });
-  
-  // Message deletion
-  socket.on('delete-message', async (data) => {
-    try {
-      const message = await Message.findById(data.messageId);
-      if (!message || (message.userId.toString() !== data.userId && !data.isAdmin)) {
-        return;
-      }
-      
-      await Message.deleteOne({ _id: data.messageId });
-      
-      // Broadcast deletion
-      if (message.recipient) {
-        io.to(message.recipient.toString()).emit('message-deleted', data.messageId);
-        socket.emit('message-deleted', data.messageId);
-      } else {
-        io.to('community').emit('community-message-deleted', data.messageId);
-      }
-    } catch (err) {
-      console.error('Delete message error:', err);
-    }
-  });
-  
-  // Admin commands
-  socket.on('admin-command', async (data) => {
-    try {
-      const user = await User.findById(data.userId);
-      if (!user || !user.isAdmin) {
-        return;
-      }
-      
-      const command = data.command.toLowerCase();
-      
-      switch (command) {
-        case '/clearchat':
-          await Message.deleteMany({ recipient: null }); // Clear community chat
-          io.to('community').emit('community-chat-cleared');
-          break;
-          
-        case '/tagall':
-          const users = await User.find({ isSuspended: false });
-          let mentionText = '📢 @all: ';
-          users.forEach(user => {
-            mentionText += `@${user.username} `;
-          });
-          
-          const message = new Message({
-            userId: data.userId,
-            content: mentionText,
-            recipient: null
-          });
-          
-          await message.save();
-          
-          io.to('community').emit('community-message', {
-            ...message.toObject(),
-            user: { 
-              _id: data.userId,
-              username: data.username,
-              profile: data.profile
-            }
-          });
-          break;
-          
-        case '/pin':
-          // This would need implementation with a pinned messages system
-          break;
-          
-        case '/unpin':
-          // This would need implementation with a pinned messages system
-          break;
-          
-        case '/ban':
-          // This would send a list of users to ban
-          const activeUsers = await User.find({ isSuspended: false, isSuperAdmin: false });
-          socket.emit('show-ban-list', activeUsers);
-          break;
-          
-        case '/help':
-          const helpMessage = `
-╭══〘〘 Contact Gain Bot 〙〙═⊷
-┃❍ Prefix: /
-┃❍ Owner: @${process.env.ADMIN_USERNAME}
-┃❍ Plugins: 25
-┃❍ Version: 5.0.0
-┃❍ Uptime: ${formatUptime(process.uptime())}
-┃❍ Time Now: ${moment().format('hh:mm:ss A')}
-┃❍ Date Today: ${moment().format('DD/MM/YYYY')}
-┃❍ Time Zone: Africa/Lagos
-┃❍ Server RAM: ${formatMemoryUsage()}
-┃❍ Commands:
-┃❍ /clearchat - Clear chat
-┃❍ /tagall - Tag all members
-┃❍ /pin - Pin a message
-┃❍ /unpin - Unpin a message
-┃❍ /ban - Ban a user
-┃❍ /help - Show this help
-╰═════════════════════════════
-          `;
-          
-          const helpMsg = new Message({
-            userId: data.userId,
-            content: helpMessage,
-            recipient: null,
+      // Admin commands
+      if (user.isAdmin && content.startsWith('/')) {
+        if (content.startsWith('/clearchat')) {
+          await Message.deleteMany({});
+          io.to('community').emit('chatCleared');
+        } else if (content.startsWith('/tagall')) {
+          const users = await User.find({ isBanned: false, isSuspended: false });
+          const taggedUsers = users.map(u => `@${u.username}`).join(' ');
+          const tagMessage = new Message({
+            userId: userId,
+            content: `Tagging all members: ${taggedUsers}`,
             isSystem: true
           });
-          
-          await helpMsg.save();
-          
-          io.to('community').emit('community-message', {
-            ...helpMsg.toObject(),
-            user: { 
-              _id: 'system',
-              username: 'System',
-              profile: { name: 'System', profilePic: '/images/system.png' }
-            }
-          });
-          break;
+          await tagMessage.save();
+          io.to('community').emit('newMessage', tagMessage);
+        } else if (content.startsWith('/pin')) {
+          // Get message ID from reply
+          const messageId = content.split(' ')[1];
+          await Message.findByIdAndUpdate(messageId, { isPinned: true });
+          io.to('community').emit('messagePinned', { messageId });
+        } else if (content.startsWith('/unpin')) {
+          // Get message ID from reply
+          const messageId = content.split(' ')[1];
+          await Message.findByIdAndUpdate(messageId, { isPinned: false });
+          io.to('community').emit('messageUnpinned', { messageId });
+        } else if (content.startsWith('/delete')) {
+          // Get message ID from reply
+          const messageId = content.split(' ')[1];
+          await Message.findByIdAndUpdate(messageId, { isDeleted: true });
+          io.to('community').emit('messageDeleted', { messageId });
+        } else if (content.startsWith('/ban')) {
+          // Get username from command
+          const username = content.split(' ')[1];
+          const targetUser = await User.findOne({ username });
+          if (targetUser) {
+            await User.findByIdAndUpdate(targetUser._id, { isBanned: true, bannedAt: new Date() });
+            io.to('community').emit('userBanned', { userId: targetUser._id });
+            
+            // Notify the banned user
+            const banMessage = new Message({
+              userId: 'system',
+              content: `You have been banned from the community chat`,
+              isSystem: true
+            });
+            await banMessage.save();
+            io.to(targetUser._id.toString()).emit('newMessage', banMessage);
+          }
+        }
+      }
+      
+      // Regular message
+      io.to('community').emit('newMessage', message);
+      
+      // Private message handling
+      if (recipient) {
+        io.to(recipient.toString()).emit('newMessage', message);
       }
     } catch (err) {
-      console.error('Admin command error:', err);
+      console.error('Message error:', err);
+      socket.emit('messageError', { error: 'Failed to send message' });
     }
   });
   
-  // Ban user
-  socket.on('ban-user', async (data) => {
+  // Handle message editing
+  socket.on('editMessage', async (data) => {
     try {
-      const admin = await User.findById(data.adminId);
-      if (!admin || !admin.isAdmin) {
+      const { messageId, newContent, userId } = data;
+      
+      // Check if user owns the message
+      const message = await Message.findById(messageId);
+      if (message.userId.toString() !== userId) {
+        socket.emit('editError', { error: 'You can only edit your own messages' });
         return;
       }
       
-      const user = await User.findById(data.userId);
-      if (user && !user.isSuperAdmin) {
-        user.isSuspended = true;
-        user.suspendedAt = new Date();
-        await user.save();
-        
-        // Notify community
-        const banMessage = new Message({
-          userId: data.adminId,
-          content: `User @${user.username} has been banned by ${admin.username}`,
-          recipient: null,
-          isSystem: true
-        });
-        
-        await banMessage.save();
-        
-        io.to('community').emit('community-message', {
-          ...banMessage.toObject(),
-          user: { 
-            _id: 'system',
-            username: 'System',
-            profile: { name: 'System', profilePic: '/images/system.png' }
-          }
-        });
-      }
+      // Update message
+      message.content = newContent;
+      message.isEdited = true;
+      message.editedAt = new Date();
+      await message.save();
+      
+      io.to('community').emit('messageEdited', {
+        messageId,
+        newContent,
+        editedAt: message.editedAt
+      });
     } catch (err) {
-      console.error('Ban user error:', err);
+      console.error('Edit message error:', err);
+      socket.emit('editError', { error: 'Failed to edit message' });
     }
   });
   
-  // AI response
-  socket.on('ai-response', (data) => {
-    // Broadcast AI response to the appropriate room
-    if (data.recipient) {
-      io.to(data.recipient).emit('ai-response', data);
-    } else {
-      io.to('community').emit('ai-response', data);
+  // Handle message deletion
+  socket.on('deleteMessage', async (data) => {
+    try {
+      const { messageId, userId } = data;
+      
+      // Check if user owns the message or is admin
+      const message = await Message.findById(messageId);
+      const user = await User.findById(userId);
+      
+      if (message.userId.toString() !== userId && !user.isAdmin) {
+        socket.emit('deleteError', { error: 'You can only delete your own messages' });
+        return;
+      }
+      
+      // Update message as deleted
+      message.isDeleted = true;
+      await message.save();
+      
+      io.to('community').emit('messageDeleted', { messageId });
+    } catch (err) {
+      console.error('Delete message error:', err);
+      socket.emit('deleteError', { error: 'Failed to delete message' });
     }
   });
   
+  // Handle message reply
+  socket.on('replyMessage', async (data) => {
+    try {
+      const { messageId, replyContent, userId, recipient } = data;
+      
+      // Get original message
+      const originalMessage = await Message.findById(messageId);
+      if (!originalMessage) {
+        socket.emit('replyError', { error: 'Original message not found' });
+        return;
+      }
+      
+      // Create reply message
+      const replyMessage = new Message({
+        userId,
+        content: replyContent,
+        replyTo: messageId,
+        recipient: recipient || null,
+        isPrivate: !!recipient
+      });
+      
+      await replyMessage.save();
+      
+      // Format the reply for display
+      const replyNotification = new Message({
+        userId: 'system',
+        content: `${originalMessage.userId === userId ? 'You' : `@${originalMessage.username}`} replied: ${replyContent}`,
+        isSystem: true
+      });
+      
+      await replyNotification.save();
+      
+      io.to('community').emit('newMessage', replyMessage);
+      io.to('community').emit('newMessage', replyNotification);
+    } catch (err) {
+      console.error('Reply message error:', err);
+      socket.emit('replyError', { error: 'Failed to reply to message' });
+    }
+  });
+  
+  // Handle disconnect
   socket.on('disconnect', () => {
     console.log('Client disconnected');
+    socket.leave('community');
   });
 });
 
-// Helper functions
-function formatUptime(seconds) {
-  const days = Math.floor(seconds / (24 * 3600));
-  seconds %= 24 * 3600;
-  const hours = Math.floor(seconds / 3600);
-  seconds %= 3600;
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  
-  return `${days}d ${hours}h ${minutes}m ${secs}s`;
+// Middleware to check if user is authenticated
+function isAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  req.flash('error', 'Please log in to view this resource');
+  res.redirect('/login');
 }
 
-function formatMemoryUsage() {
-  const total = (process.memoryUsage().heapTotal / 1024 / 1024).toFixed(2);
-  const used = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
-  return `${used} GB / ${total} GB`;
+// Middleware to check if user is admin
+function isAdmin(req, res, next) {
+  if (req.session.isAdmin) {
+    return next();
+  }
+  req.flash('error', 'You do not have permission to view this page');
+  res.redirect('/');
+}
+
+// Create default group if none exists
+async function createDefaultGroup() {
+  try {
+    const count = await Group.countDocuments();
+    if (count === 0) {
+      const defaultGroup = new Group({
+        name: 'Community Chat',
+        description: 'Main community chat for all users',
+        isPublic: true
+      });
+      await defaultGroup.save();
+      console.log('Default group created');
+    }
+  } catch (err) {
+    console.error('Error creating default group:', err);
+  }
 }
 
 // Start Server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+mongoose.connection.once('open', () => {
+  createDefaultGroup();
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+});
