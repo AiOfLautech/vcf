@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Gain - Network Smarter</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #0ea5e9;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+            --card-bg: #1e293b;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --glass: rgba(15, 23, 42, 0.8);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+        
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 5%;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar.scrolled {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .logo span:first-child {
+            color: var(--primary);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav-links a {
+            color: var(--light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            border: none;
+            font-size: 1rem;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            color: var(--light);
+            border: 2px solid var(--border);
+        }
+        
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+        }
+        
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 0 10%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-content {
+            max-width: 600px;
+            z-index: 1;
+            animation: fadeInUp 1s ease;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, var(--primary), var(--info));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--gray);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .features {
+            padding: 5rem 10%;
+            background: var(--glass);
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .section-title h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, var(--primary), var(--info));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .section-title p {
+            color: var(--gray);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .feature-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--info));
+        }
+        
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .feature-icon i {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-card p {
+            color: var(--gray);
+            line-height: 1.6;
+        }
+        
+        .demo-section {
+            padding: 5rem 10%;
+        }
+        
+        .demo-container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .demo-header {
+            padding: 1rem 2rem;
+            background: rgba(30, 41, 59, 0.7);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .demo-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .demo-actions {
+            display: flex;
+            gap: 1rem;
+            color: var(--gray);
+        }
+        
+        .demo-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+        }
+        
+        .sidebar {
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+        }
+        
+        .user-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .user-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        
+        .user-status {
+            font-size: 0.75rem;
+            color: var(--success);
+        }
+        
+        .chat-area {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+        }
+        
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding-bottom: 1rem;
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 1rem;
+            border-radius: 12px;
+            position: relative;
+        }
+        
+        .message.sent {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .message.received {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message-time {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+            text-align: right;
+        }
+        
+        .chat-input {
+            display: flex;
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 1rem;
+            border-radius: 12px;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid var(--border);
+            color: var(--light);
+            font-size: 1rem;
+        }
+        
+        .chat-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .chat-input button {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: var(--primary);
+            border: none;
+            color: white;
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .chat-input button:hover {
+            background: var(--primary-light);
+            transform: scale(1.05);
+        }
+        
+        .how-it-works {
+            padding: 5rem 10%;
+            background: var(--glass);
+        }
+        
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        
+        .step {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        
+        .step:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+        
+        .step h3 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .step p {
+            color: var(--gray);
+            line-height: 1.6;
+        }
+        
+        .cta-section {
+            padding: 5rem 10%;
+            text-align: center;
+        }
+        
+        .cta-content {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .cta-content h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, var(--primary), var(--info));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .cta-content p {
+            font-size: 1.25rem;
+            color: var(--gray);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .footer {
+            background: rgba(15, 23, 42, 0.95);
+            padding: 3rem 10%;
+            border-top: 1px solid var(--border);
+        }
+        
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+        
+        .footer-column h3 {
+            margin-bottom: 1.5rem;
+            font-size: 1.25rem;
+            color: white;
+        }
+        
+        .footer-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .footer-links a {
+            color: var(--gray);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+        
+        .copyright {
+            text-align: center;
+            padding-top: 2rem;
+            color: var(--gray);
+            border-top: 1px solid var(--border);
+            margin-top: 2rem;
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+        
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .demo-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem 5%;
+            }
+            
+            .nav-links, .auth-buttons {
+                display: none;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    
+    <nav class="navbar">
+        <a href="/" class="logo">
+            <i class="fas fa-bolt"></i>
+            <div class="logo-text">
+                <span>Contact</span>
+                <span>Gain</span>
+            </div>
+        </a>
+        
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="/api">API</a>
+            <a href="/login">Login</a>
+        </div>
+        
+        <div class="auth-buttons">
+            <a href="/login" class="btn btn-outline">Sign In</a>
+            <a href="/signup" class="btn btn-primary">Sign Up</a>
+        </div>
+    </nav>
+    
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Network Smarter, Not Harder</h1>
+            <p>Contact Gain helps you collect and organize contacts effortlessly during events, meetings, and conferences with our innovative VCF session technology and powerful community chat.</p>
+            <div class="hero-buttons">
+                <a href="/signup" class="btn btn-primary">Get Started Free</a>
+                <a href="#demo" class="btn btn-outline">See Demo</a>
+            </div>
+        </div>
+    </section>
+    
+    <section class="features" id="features">
+        <div class="section-title">
+            <h2>Powerful Features</h2>
+            <p>Everything you need to build meaningful connections and grow your network</p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Community Chat</h3>
+                <p>Engage with other users in real-time community chat with advanced features like message editing, deletion, and AI integration.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>AI Assistant</h3>
+                <p>Access multiple AI models including GPT, Llama, and Gemini to enhance your conversations and get instant help.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-address-book"></i>
+                </div>
+                <h3>VCF Session Generator</h3>
+                <p>Create sessions to collect contacts from events and meetings, then export as VCF files for easy importing to your phone.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3>Admin Controls</h3>
+                <p>Powerful moderation tools including user suspension, chat management, and advanced commands for community admins.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-comment-dots"></i>
+                </div>
+                <h3>Private Messaging</h3>
+                <p>Send private messages to other users, view their profiles, and build meaningful one-on-one connections.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-code"></i>
+                </div>
+                <h3>Developer API</h3>
+                <p>Integrate Contact Gain into your applications with our comprehensive API for VCF generation and contact management.</p>
+            </div>
+        </div>
+    </section>
+    
+    <section class="demo-section" id="demo">
+        <div class="section-title">
+            <h2>Live Demo</h2>
+            <p>See Contact Gain in action with our interactive demo</p>
+        </div>
+        
+        <div class="demo-container">
+            <div class="demo-header">
+                <div class="demo-title">
+                    <i class="fas fa-comments"></i>
+                    Community Chat
+                </div>
+                <div class="demo-actions">
+                    <i class="fas fa-cog"></i>
+                    <i class="fas fa-ellipsis-v"></i>
+                </div>
+            </div>
+            
+            <div class="demo-content">
+                <div class="sidebar">
+                    <div class="user-list">
+                        <div class="user-item active">
+                            <div class="user-avatar">CG</div>
+                            <div class="user-info">
+                                <div class="user-name">Contact Gain Bot</div>
+                                <div class="user-status">Online</div>
+                            </div>
+                        </div>
+                        <div class="user-item">
+                            <div class="user-avatar">AD</div>
+                            <div class="user-info">
+                                <div class="user-name">Admin</div>
+                                <div class="user-status">Online</div>
+                            </div>
+                        </div>
+                        <div class="user-item">
+                            <div class="user-avatar">JS</div>
+                            <div class="user-info">
+                                <div class="user-name">John Smith</div>
+                                <div class="user-status">Online</div>
+                            </div>
+                        </div>
+                        <div class="user-item">
+                            <div class="user-avatar">MJ</div>
+                            <div class="user-info">
+                                <div class="user-name">Mary Johnson</div>
+                                <div class="user-status">30m ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chat-area">
+                    <div class="messages" id="demo-messages">
+                        <div class="message received">
+                            <div>Welcome to Contact Gain! Type /help to see available commands.</div>
+                            <div class="message-time">10:00 AM</div>
+                        </div>
+                        <div class="message sent">
+                            <div>How do I create a new session?</div>
+                            <div class="message-time">10:02 AM</div>
+                        </div>
+                        <div class="message received">
+                            <div>Just click on the "Create Session" button in the dashboard. You can set a timer and share the link with others!</div>
+                            <div class="message-time">10:03 AM</div>
+                        </div>
+                        <div class="message received">
+                            <div class="ai-response">
+                                <div class="ai-header">
+                                    <i class="fas fa-robot"></i> AI Assistant
+                                </div>
+                                <div class="ai-content">
+                                    <pre>I'm here to help! Contact Gain allows you to create sessions for collecting contacts, chat with community members, and export contacts as VCF files.</pre>
+                                </div>
+                                <div class="ai-footer">Powered by Contact Gain</div>
+                            </div>
+                            <div class="message-time">10:05 AM</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input">
+                        <input type="text" placeholder="Type a message...">
+                        <button><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="how-it-works" id="how-it-works">
+        <div class="section-title">
+            <h2>How It Works</h2>
+            <p>Getting started with Contact Gain is simple and straightforward</p>
+        </div>
+        
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Create a Session</h3>
+                <p>Log in and create a new session with a name, optional WhatsApp link, and timer duration.</p>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Share the Link</h3>
+                <p>Share the session link with attendees who can then add their contact information.</p>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Collect Contacts</h3>
+                <p>Attendees add their contact details which are securely stored in the session.</p>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">4</div>
+                <h3>Export VCF</h3>
+                <p>After the session ends, download the VCF file and import it to your phone's contacts.</p>
+            </div>
+        </div>
+    </section>
+    
+    <section class="cta-section">
+        <div class="cta-content">
+            <h2>Ready to Transform Your Networking?</h2>
+            <p>Join thousands of professionals who are using Contact Gain to build meaningful connections and grow their networks.</p>
+            <a href="/signup" class="btn btn-primary" style="font-size: 1.25rem; padding: 1rem 2rem;">Get Started Today</a>
+        </div>
+    </section>
+    
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-column">
+                <h3>Contact Gain</h3>
+                <div class="footer-links">
+                    <a href="#">About Us</a>
+                    <a href="#">Features</a>
+                    <a href="#">Pricing</a>
+                    <a href="#">Blog</a>
+                </div>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Resources</h3>
+                <div class="footer-links">
+                    <a href="#">API Documentation</a>
+                    <a href="#">Help Center</a>
+                    <a href="#">Community</a>
+                    <a href="#">Tutorials</a>
+                </div>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Legal</h3>
+                <div class="footer-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Cookie Policy</a>
+                    <a href="#">GDPR</a>
+                </div>
+            </div>
+            
+            <div class="footer-column">
+                <h3>Connect</h3>
+                <div class="footer-links">
+                    <a href="#"><i class="fab fa-twitter"></i> Twitter</a>
+                    <a href="#"><i class="fab fa-linkedin"></i> LinkedIn</a>
+                    <a href="#"><i class="fab fa-github"></i> GitHub</a>
+                    <a href="#"><i class="fab fa-discord"></i> Discord</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="copyright">
+            &copy; 2024 Contact Gain. All rights reserved. Powered by Contact Gain AI.
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        // Initialize particles.js
+        particlesJS('particles-js', {
+            particles: {
+                number: {
+                    value: 80,
+                    density: {
+                        enable: true,
+                        value_area: 800
+                    }
+                },
+                color: {
+                    value: '#6366f1'
+                },
+                shape: {
+                    type: 'circle',
+                    stroke: {
+                        width: 0,
+                        color: '#000000'
+                    },
+                    polygon: {
+                        nb_sides: 5
+                    },
+                    image: {
+                        src: 'img/github.svg',
+                        width: 100,
+                        height: 100
+                    }
+                },
+                opacity: {
+                    value: 0.5,
+                    random: true,
+                    anim: {
+                        enable: true,
+                        speed: 1,
+                        opacity_min: 0.1,
+                        sync: false
+                    }
+                },
+                size: {
+                    value: 3,
+                    random: true,
+                    anim: {
+                        enable: false,
+                        speed: 40,
+                        size_min: 0.1,
+                        sync: false
+                    }
+                },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: '#6366f1',
+                    opacity: 0.2,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 2,
+                    direction: 'none',
+                    random: false,
+                    straight: false,
+                    out_mode: 'out',
+                    bounce: false,
+                    attract: {
+                        enable: false,
+                        rotateX: 600,
+                        rotateY: 1200
+                    }
+                }
+            },
+            interactivity: {
+                detect_on: 'canvas',
+                events: {
+                    onhover: {
+                        enable: true,
+                        mode: 'grab'
+                    },
+                    onclick: {
+                        enable: true,
+                        mode: 'push'
+                    },
+                    resize: true
+                },
+                modes: {
+                    grab: {
+                        distance: 140,
+                        line_linked: {
+                            opacity: 0.5
+                        }
+                    },
+                    bubble: {
+                        distance: 400,
+                        size: 40,
+                        duration: 2,
+                        opacity: 0.8,
+                        speed: 3
+                    },
+                    repulse: {
+                        distance: 200,
+                        duration: 0.4
+                    },
+                    push: {
+                        particles_nb: 4
+                    },
+                    remove: {
+                        particles_nb: 2
+                    }
+                }
+            },
+            retina_detect: true
+        });
+        
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
+        // Demo chat functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatInput = document.querySelector('.chat-input input');
+            const chatButton = document.querySelector('.chat-input button');
+            const messagesContainer = document.getElementById('demo-messages');
+            
+            function sendMessage() {
+                const message = chatInput.value.trim();
+                if (message) {
+                    // Add user message
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message sent';
+                    messageDiv.innerHTML = `
+                        <div>${message}</div>
+                        <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                    `;
+                    messagesContainer.appendChild(messageDiv);
+                    
+                    // Clear input
+                    chatInput.value = '';
+                    
+                    // Auto-scroll to bottom
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    
+                    // Simulate AI response after delay
+                    if (message.toLowerCase().includes('help') || message.startsWith('/')) {
+                        setTimeout(() => {
+                            const helpResponse = document.createElement('div');
+                            helpResponse.className = 'message received';
+                            helpResponse.innerHTML = `
+                                <div class="ai-response">
+                                    <div class="ai-header">
+                                        <i class="fas fa-robot"></i> AI Assistant
+                                    </div>
+                                    <div class="ai-content">
+                                        <pre>╭══〘〘 Contact Gain Bot 〙〙═⊷
+┃❍ Prefix: /
+┃❍ Owner: @${process.env.ADMIN_USERNAME}
+┃❍ Plugins: 25
+┃❍ Version: 5.0.0
+┃❍ Uptime: 14d 21h 20m 39s
+┃❍ Time Now: 03:00:59 pm
+┃❍ Date Today: 07/07/2025
+┃❍ Time Zone: Africa/Lagos
+┃❍ Server RAM: 74.81 GB/125.77 GB
+╰═════════════════════════════</pre>
+                                    </div>
+                                    <div class="ai-footer">Powered by Contact Gain</div>
+                                </div>
+                                <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                            `;
+                            messagesContainer.appendChild(helpResponse);
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }, 1000);
+                    } else if (message.toLowerCase().includes('session') || message.toLowerCase().includes('create')) {
+                        setTimeout(() => {
+                            const sessionResponse = document.createElement('div');
+                            sessionResponse.className = 'message received';
+                            sessionResponse.innerHTML = `
+                                <div>To create a new session:<br>1. Go to Dashboard<br>2. Click "Create Session"<br>3. Fill in session details<br>4. Share the link with others</div>
+                                <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                            `;
+                            messagesContainer.appendChild(sessionResponse);
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }, 1000);
+                    } else {
+                        setTimeout(() => {
+                            const aiResponse = document.createElement('div');
+                            aiResponse.className = 'message received';
+                            aiResponse.innerHTML = `
+                                <div class="ai-response">
+                                    <div class="ai-header">
+                                        <i class="fas fa-robot"></i> AI Assistant
+                                    </div>
+                                    <div class="ai-content">
+                                        <pre>I'm here to help! Contact Gain allows you to create sessions for collecting contacts, chat with community members, and export contacts as VCF files. Try typing "/help" to see available commands.</pre>
+                                    </div>
+                                    <div class="ai-footer">Powered by Contact Gain</div>
+                                </div>
+                                <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                            `;
+                            messagesContainer.appendChild(aiResponse);
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }, 1500);
+                    }
+                }
+            }
+            
+            chatButton.addEventListener('click', sendMessage);
+            
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
