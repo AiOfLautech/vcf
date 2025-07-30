@@ -23,12 +23,62 @@ const io = socketIo(server, {
   }
 });
 
-// Database Models (fixed path resolution)
-const User = require('./models/User');
-const Session = require('./models/Session');
-const Contact = require('./models/Contact');
-const Message = require('./models/Message');
-const Download = require('./models/Download');
+// Database Models
+const UserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  isAdmin: { type: Boolean, default: false },
+  isSuperAdmin: { type: Boolean, default: false },
+  isSuspended: { type: Boolean, default: false },
+  suspendedAt: Date,
+  lastSeen: Date,
+  profile: {
+    name: String,
+    phone: String,
+    bio: String,
+    profilePic: String
+  }
+});
+
+const SessionSchema = new mongoose.Schema({
+  sessionId: { type: String, required: true, unique: true },
+  groupName: { type: String, required: true },
+  whatsappGroup: String,
+  timer: { type: Number, default: 60 },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  createdAt: { type: Date, default: Date.now },
+  downloadCount: { type: Number, default: 0 }
+});
+
+const ContactSchema = new mongoose.Schema({
+  sessionId: String,
+  name: String,
+  phone: String,
+  createdAt: { type: Date, default: Date.now }
+});
+
+const MessageSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  content: String,
+  recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  createdAt: { type: Date, default: Date.now },
+  edited: { type: Boolean, default: false },
+  isSystem: { type: Boolean, default: false }
+});
+
+const DownloadSchema = new mongoose.Schema({
+  sessionId: String,
+  status: String,
+  error: String,
+  createdAt: { type: Date, default: Date.now }
+});
+
+// Create models
+const User = mongoose.model('User', UserSchema);
+const Session = mongoose.model('Session', SessionSchema);
+const Contact = mongoose.model('Contact', ContactSchema);
+const Message = mongoose.model('Message', MessageSchema);
+const Download = mongoose.model('Download', DownloadSchema);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URL, {
@@ -41,13 +91,8 @@ db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', async () => {
   console.log('Connected to MongoDB');
   
-  // Clean up sessions with null sessionId
-  try {
-    await Session.deleteMany({ sessionId: null });
-    console.log('Cleaned up sessions with null sessionId');
-  } catch (cleanupError) {
-    console.error('Error cleaning up sessions:', cleanupError);
-  }
+  // Cleanup sessions with null sessionId
+  await Session.deleteMany({ sessionId: null });
   
   // Create default admin if not exists
   User.findOne({ username: process.env.ADMIN_USERNAME }).then(user => {
@@ -412,14 +457,23 @@ app.get('/create-session', isAuthenticated, (req, res) => {
 app.post('/create-session', isAuthenticated, async (req, res) => {
   try {
     const { groupName, whatsappGroup, timer } = req.body;
+    
+    // Generate unique session ID with retry logic
     let sessionId;
     let sessionExists;
+    let attempts = 0;
+    const maxAttempts = 5;
     
-    // Ensure unique session ID
     do {
       sessionId = uuidv4().substring(0, 9).toUpperCase();
       sessionExists = await Session.findOne({ sessionId });
-    } while (sessionExists);
+      attempts++;
+    } while (sessionExists && attempts < maxAttempts);
+    
+    if (sessionExists) {
+      req.flash('error', 'Failed to generate unique session ID. Please try again.');
+      return res.redirect('/create-session');
+    }
     
     const session = new Session({
       sessionId,
