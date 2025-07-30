@@ -1,299 +1,1563 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>User Profile | Contact Gain</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary: #6366f1;
-      --primary-light: #818cf8;
-      --secondary: #10b981;
-      --danger: #ef4444;
-      --warning: #f59e0b;
-      --info: #0ea5e9;
-      --dark: #1e293b;
-      --light: #f8fafc;
-      --gray: #94a3b8;
-      --card-bg: #ffffff;
-      --card-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
-    }
-    body {
-      background: linear-gradient(to bottom, #e0e7ff, #f1f5f9);
-      color: #334155;
-      min-height: 100vh;
-      padding: 2rem;
-      animation: fadeIn 1s ease-in;
-    }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .profile-container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: var(--card-bg);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: var(--card-shadow);
-      animation: slideInUp 0.7s ease-out;
-    }
-    @keyframes slideInUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .profile-header {
-      background: linear-gradient(135deg, var(--primary), var(--primary-light));
-      padding: 3rem 2rem 2rem;
-      text-align: center;
-      position: relative;
-    }
-    .profile-avatar {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      background: white;
-      margin: 0 auto 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 3rem;
-      color: var(--primary);
-      position: relative;
-      border: 5px solid white;
-      transition: transform 0.3s ease;
-    }
-    .profile-avatar:hover { transform: scale(1.1); }
-    .profile-avatar img {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-    .online-status {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      width: 20px;
-      height: 20px;
-      background: var(--secondary);
-      border-radius: 50%;
-      border: 3px solid white;
-    }
-    .profile-name {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: white;
-      margin-bottom: 0.5rem;
-    }
-    .profile-username {
-      font-size: 1.2rem;
-      color: rgba(255,255,255,0.8);
-      margin-bottom: 1rem;
-    }
-    .admin-badge {
-      display: inline-block;
-      background: var(--info);
-      color: white;
-      padding: 0.3rem 0.8rem;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      font-weight: 500;
-      margin-bottom: 1.5rem;
-    }
-    .profile-actions {
-      display: flex;
-      justify-content: center;
-      gap: 1rem;
-      margin-top: 1.5rem;
-    }
-    .profile-btn {
-      padding: 0.8rem 1.5rem;
-      border-radius: 30px;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    .profile-btn:hover { transform: scale(1.05); }
-    .message-btn {
-      background: white;
-      color: var(--primary);
-      border: none;
-    }
-    .message-btn:hover { background: rgba(255,255,255,0.9); }
-    .edit-btn, .more-btn {
-      background: rgba(255,255,255,0.2);
-      color: white;
-      border: none;
-    }
-    .edit-btn:hover, .more-btn:hover { background: rgba(255,255,255,0.3); }
-    .profile-body {
-      padding: 2rem;
-    }
-    .section-title {
-      font-size: 1.3rem;
-      font-weight: 600;
-      margin-bottom: 1.5rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .profile-details {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    .detail-item {
-      background: #f8fafc;
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: var(--card-shadow);
-      transition: transform 0.3s ease;
-    }
-    .detail-item:hover { transform: translateY(-5px); }
-    .detail-label {
-      font-size: 0.9rem;
-      color: var(--gray);
-      margin-bottom: 0.5rem;
-    }
-    .detail-value {
-      font-size: 1.1rem;
-      font-weight: 500;
-    }
-    .bio-content {
-      background: #f8fafc;
-      border-radius: 12px;
-      padding: 1.5rem;
-      line-height: 1.6;
-      box-shadow: var(--card-shadow);
-    }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 1rem;
-      margin-top: 2rem;
-    }
-    .stat-card {
-      background: #f8fafc;
-      border-radius: 12px;
-      padding: 1.5rem;
-      text-align: center;
-      box-shadow: var(--card-shadow);
-      transition: transform 0.3s ease;
-    }
-    .stat-card:hover { transform: translateY(-5px); }
-    .stat-value {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 0.5rem;
-    }
-    .stat-label {
-      font-size: 0.9rem;
-      color: var(--gray);
-    }
-    @media (max-width: 768px) {
-      .profile-header { padding: 2rem 1rem 1.5rem; }
-      .profile-avatar { width: 100px; height: 100px; font-size: 2.5rem; }
-      .profile-name { font-size: 1.5rem; }
-      .profile-username { font-size: 1rem; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile | Contact Gain</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #0ea5e9;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+            --card-bg: #1e293b;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --glass: rgba(15, 23, 42, 0.85);
+            --border: rgba(255, 255, 255, 0.1);
+            --success: #10b981;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 5%;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar.scrolled {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .logo span:first-child {
+            color: var(--primary);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav-links a {
+            color: var(--light);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            border: none;
+            font-size: 1rem;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            color: var(--light);
+            border: 2px solid var(--border);
+        }
+        
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+        }
+        
+        .profile-container {
+            max-width: 1200px;
+            margin: 5rem auto;
+            padding: 0 2rem;
+        }
+        
+        .profile-header {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cover-photo {
+            height: 200px;
+            background: linear-gradient(45deg, var(--primary), var(--info));
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cover-photo::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%);
+        }
+        
+        .particles-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        .profile-info {
+            padding: 2rem;
+            display: flex;
+            gap: 2rem;
+            position: relative;
+            top: -75px;
+            z-index: 1;
+        }
+        
+        .profile-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 5px solid var(--dark);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            color: white;
+            position: relative;
+        }
+        
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .online-status {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
+            background: var(--success);
+            border-radius: 50%;
+            border: 3px solid var(--dark);
+            display: none;
+        }
+        
+        .profile-details {
+            flex: 1;
+        }
+        
+        .profile-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .admin-badge {
+            color: gold;
+            font-size: 1.5rem;
+        }
+        
+        .profile-username {
+            font-size: 1.25rem;
+            color: var(--gray);
+            margin-bottom: 1rem;
+        }
+        
+        .profile-bio {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--light);
+            margin-bottom: 1.5rem;
+            max-width: 600px;
+        }
+        
+        .profile-stats {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        
+        .profile-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .profile-content {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 2rem;
+        }
+        
+        .profile-main {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .profile-about {
+            margin-bottom: 2rem;
+        }
+        
+        .info-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .info-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(99, 102, 241, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+        }
+        
+        .info-details {
+            flex: 1;
+        }
+        
+        .info-label {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-bottom: 0.25rem;
+        }
+        
+        .info-value {
+            font-weight: 500;
+        }
+        
+        .profile-activity {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .activity-card {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        
+        .activity-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+        }
+        
+        .activity-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(99, 102, 241, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        
+        .activity-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .activity-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .activity-desc {
+            color: var(--gray);
+            font-size: 0.85rem;
+        }
+        
+        .profile-sidebar {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            height: fit-content;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+        
+        .sidebar-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .user-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .status-online .status-indicator {
+            background: var(--success);
+        }
+        
+        .status-offline .status-indicator {
+            background: var(--gray);
+        }
+        
+        .friends-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .friend-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .friend-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .friend-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .friend-info {
+            flex: 1;
+        }
+        
+        .friend-name {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        
+        .friend-status {
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+        
+        .admin-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+        
+        .admin-action {
+            padding: 0.75rem;
+            border-radius: 12px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .admin-action:hover {
+            background: rgba(99, 102, 241, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .admin-action i {
+            color: var(--primary);
+        }
+        
+        .ai-response {
+            background: rgba(14, 165, 233, 0.1);
+            border-left: 3px solid var(--info);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 1.5rem;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .ai-header {
+            padding: 0.75rem;
+            background: rgba(14, 165, 233, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .ai-content {
+            padding: 1rem;
+            line-height: 1.6;
+        }
+        
+        .ai-content pre {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--light);
+            margin: 0;
+        }
+        
+        .ai-footer {
+            padding: 0.75rem;
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--gray);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .command-suggestion {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border);
+            width: 300px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            display: none;
+        }
+        
+        .command-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .command-item {
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .command-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .command-name {
+            font-weight: 500;
+            color: var(--primary);
+        }
+        
+        .command-desc {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+        
+        .ban-list {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            width: 400px;
+            max-width: 90%;
+            border: 1px solid var(--border);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .ban-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .ban-list-header h3 {
+            font-size: 1.25rem;
+        }
+        
+        .ban-list-close {
+            background: none;
+            border: none;
+            color: var(--gray);
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+        
+        .ban-list-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+        }
+        
+        .ban-users {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        
+        .ban-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .ban-user:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .ban-user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .ban-user-info {
+            flex: 1;
+        }
+        
+        .ban-user-name {
+            font-weight: 500;
+        }
+        
+        .ban-user-status {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            width: 500px;
+            max-width: 90%;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray);
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+        
+        .modal-btn {
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            font-size: 1rem;
+        }
+        
+        .modal-btn.cancel {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--light);
+        }
+        
+        .modal-btn.cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-btn.confirm {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .modal-btn.confirm:hover {
+            background: var(--primary-light);
+        }
+        
+        .edit-message-form {
+            display: none;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        .edit-message-form textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--light);
+            resize: none;
+            min-height: 60px;
+        }
+        
+        .edit-message-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .edit-message-btn {
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .edit-message-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+        }
+        
+        .edit-message-btn.save {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .edit-message-btn.save:hover {
+            background: var(--primary-light);
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .profile-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .profile-sidebar {
+                order: -1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .profile-info {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                gap: 1rem;
+                top: -100px;
+            }
+            
+            .profile-avatar {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .profile-name {
+                font-size: 2rem;
+            }
+            
+            .profile-stats {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="profile-container">
-    <div class="profile-header">
-      <div class="profile-avatar">
-        <% if (profileUser.profile && profileUser.profile.profilePic) { %>
-          <img src="<%= profileUser.profile.profilePic %>" alt="Profile">
-        <% } else { %>
-          <%= profileUser.username.charAt(0).toUpperCase() %>
-        <% } %>
-        <% if (profileUser.lastSeen > Date.now() - 300000) { %>
-          <div class="online-status"></div>
-        <% } %>
-      </div>
-      <div class="profile-name">
-        <%= profileUser.profile?.name || profileUser.username %>
-        <% if (profileUser.isAdmin) { %>
-          <span class="admin-badge"><i class="fas fa-check-circle"></i> Admin</span>
-        <% } %>
-      </div>
-      <div class="profile-username">@<%= profileUser.username %></div>
-      <div class="profile-actions">
-        <div class="profile-btn message-btn" id="messageBtn"><i class="fas fa-envelope"></i> Message</div>
-        <% if (currentUser._id.toString() === profileUser._id.toString()) { %>
-          <div class="profile-btn edit-btn" id="editProfileBtn"><i class="fas fa-edit"></i> Edit Profile</div>
-        <% } else if (currentUser.isAdmin) { %>
-          <div class="profile-btn more-btn" id="adminActions"><i class="fas fa-cog"></i> Admin Actions</div>
-        <% } %>
-      </div>
+    <div id="particles-js"></div>
+    
+    <nav class="navbar">
+        <a href="/" class="logo">
+            <i class="fas fa-bolt"></i>
+            <div class="logo-text">
+                <span>Contact</span>
+                <span>Gain</span>
+            </div>
+        </a>
+        
+        <div class="nav-links">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/chat">Community Chat</a>
+            <a href="/create-session">Create Session</a>
+            <a href="/api">API</a>
+        </div>
+        
+        <div class="auth-buttons">
+            <a href="/profile/<%= user ? user._id : '' %>" class="btn btn-outline">
+                <i class="fas fa-user"></i>
+            </a>
+            <a href="/logout" class="btn btn-primary">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="profile-container">
+        <div class="profile-header">
+            <div class="cover-photo">
+                <div class="particles-bg" id="profile-particles"></div>
+            </div>
+            <div class="profile-info">
+                <div class="profile-avatar">
+                    <% if (profileUser && profileUser.profile && profileUser.profile.profilePic) { %>
+                        <img src="<%= profileUser.profile.profilePic %>" alt="<%= profileUser.username %>">
+                    <% } else { %>
+                        <%= profileUser ? profileUser.username.charAt(0).toUpperCase() : 'U' %>
+                    <% } %>
+                    <% if (profileUser && profileUser.lastSeen && (new Date() - new Date(profileUser.lastSeen)) < 300000) { %>
+                        <div class="online-status" style="display: block;"></div>
+                    <% } %>
+                </div>
+                
+                <div class="profile-details">
+                    <h1 class="profile-name">
+                        <%= profileUser && profileUser.profile ? profileUser.profile.name : profileUser ? profileUser.username : 'User' %>
+                        <% if (profileUser && profileUser.isAdmin) { %>
+                            <i class="fas fa-star admin-badge" style="color: gold;"></i>
+                        <% } %>
+                        <% if (profileUser && profileUser.isSuperAdmin) { %>
+                            <i class="fas fa-star admin-badge" style="color: gold; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);"></i>
+                            <i class="fas fa-star admin-badge" style="color: gold; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);"></i>
+                        <% } %>
+                    </h1>
+                    
+                    <div class="profile-username">@<%= profileUser ? profileUser.username : 'username' %></div>
+                    
+                    <p class="profile-bio">
+                        <%= profileUser && profileUser.profile && profileUser.profile.bio ? profileUser.profile.bio : 'No bio available' %>
+                    </p>
+                    
+                    <div class="profile-stats">
+                        <div class="stat">
+                            <div class="stat-value">24</div>
+                            <div class="stat-label">Sessions</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">148</div>
+                            <div class="stat-label">Contacts</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">42</div>
+                            <div class="stat-label">Messages</div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-actions">
+                        <a href="/private-chat/<%= profileUser ? profileUser._id : '' %>" class="btn btn-primary">
+                            <i class="fas fa-comment"></i> Message
+                        </a>
+                        <% if (user && user._id.toString() === profileUser._id.toString()) { %>
+                            <a href="/edit-profile" class="btn btn-outline">
+                                <i class="fas fa-edit"></i> Edit Profile
+                            </a>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="profile-content">
+            <div class="profile-main">
+                <h2 class="section-title"><i class="fas fa-user-circle"></i> About</h2>
+                <div class="profile-about">
+                    <div class="info-item">
+                        <div class="info-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="info-details">
+                            <div class="info-label">Full Name</div>
+                            <div class="info-value">
+                                <%= profileUser && profileUser.profile ? profileUser.profile.name : profileUser ? profileUser.username : 'Name' %>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="info-details">
+                            <div class="info-label">Phone</div>
+                            <div class="info-value">
+                                <%= profileUser && profileUser.profile && profileUser.profile.phone ? profileUser.profile.phone : 'Not provided' %>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="info-details">
+                            <div class="info-label">Email</div>
+                            <div class="info-value"><%= profileUser ? profileUser.username : 'email' %>@contactgain.com</div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <div class="info-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="info-details">
+                            <div class="info-label">Last Seen</div>
+                            <div class="info-value"><%= lastSeen %></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h2 class="section-title"><i class="fas fa-chart-line"></i> Activity</h2>
+                <div class="profile-activity">
+                    <div class="activity-card">
+                        <div class="activity-icon">
+                            <i class="fas fa-address-book"></i>
+                        </div>
+                        <div class="activity-title">Total Contacts</div>
+                        <div class="activity-value">148</div>
+                        <div class="activity-desc">Collected from sessions</div>
+                    </div>
+                    
+                    <div class="activity-card">
+                        <div class="activity-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="activity-title">Community Chats</div>
+                        <div class="activity-value">42</div>
+                        <div class="activity-desc">Messages sent</div>
+                    </div>
+                    
+                    <div class="activity-card">
+                        <div class="activity-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="activity-title">Sessions Joined</div>
+                        <div class="activity-value">24</div>
+                        <div class="activity-desc">Active sessions</div>
+                    </div>
+                </div>
+                
+                <h2 class="section-title"><i class="fas fa-robot"></i> AI Assistant</h2>
+                <div class="ai-response">
+                    <div class="ai-header">
+                        <i class="fas fa-robot"></i> AI Assistant
+                    </div>
+                    <div class="ai-content">
+                        <pre>╭══〘〘 Contact Gain Bot 〙〙═⊷
+┃❍ Prefix: /
+┃❍ Owner: @<%= process.env.ADMIN_USERNAME %>
+┃❍ Plugins: 25
+┃❍ Version: 5.0.0
+┃❍ Uptime: 14d 21h 20m 39s
+┃❍ Time Now: 03:00:59 pm
+┃❍ Date Today: 07/07/2025
+┃❍ Time Zone: Africa/Lagos
+┃❍ Server RAM: 74.81 GB/125.77 GB
+╰═════════════════════════════</pre>
+                    </div>
+                    <div class="ai-footer">Powered by Contact Gain</div>
+                </div>
+            </div>
+            
+            <div class="profile-sidebar">
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title"><i class="fas fa-info-circle"></i> Status</h3>
+                    <div class="user-status <%= profileUser && profileUser.lastSeen && (new Date() - new Date(profileUser.lastSeen)) < 300000 ? 'status-online' : 'status-offline' %>">
+                        <div class="status-indicator"></div>
+                        <span><%= profileUser && profileUser.lastSeen && (new Date() - new Date(profileUser.lastSeen)) < 300000 ? 'Online' : 'Offline' %></span>
+                    </div>
+                    
+                    <% if (user && user.isAdmin && user._id.toString() !== profileUser._id.toString()) { %>
+                        <div class="admin-actions">
+                            <% if (profileUser.isSuspended) { %>
+                                <div class="admin-action" id="unsuspendUserBtn">
+                                    <i class="fas fa-undo"></i>
+                                    <span>Unsuspend User</span>
+                                </div>
+                            <% } else { %>
+                                <div class="admin-action" id="suspendUserBtn">
+                                    <i class="fas fa-ban"></i>
+                                    <span>Suspend User</span>
+                                </div>
+                            <% } %>
+                            <div class="admin-action" id="deleteUserBtn">
+                                <i class="fas fa-trash"></i>
+                                <span>Delete User</span>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title"><i class="fas fa-user-friends"></i> Friends</h3>
+                    <div class="friends-list">
+                        <div class="friend-item">
+                            <div class="friend-avatar">A</div>
+                            <div class="friend-info">
+                                <div class="friend-name">Alex Johnson</div>
+                                <div class="friend-status">Online</div>
+                            </div>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-avatar">S</div>
+                            <div class="friend-info">
+                                <div class="friend-name">Sarah Williams</div>
+                                <div class="friend-status">30m ago</div>
+                            </div>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-avatar">M</div>
+                            <div class="friend-info">
+                                <div class="friend-name">Michael Brown</div>
+                                <div class="friend-status">Online</div>
+                            </div>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-avatar">J</div>
+                            <div class="friend-info">
+                                <div class="friend-name">Jessica Davis</div>
+                                <div class="friend-status">2h ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title"><i class="fas fa-history"></i> Recent Activity</h3>
+                    <div class="friends-list">
+                        <div class="friend-item">
+                            <div class="friend-avatar" style="background: var(--success);">
+                                <i class="fas fa-address-book"></i>
+                            </div>
+                            <div class="friend-info">
+                                <div class="friend-name">Added to Session</div>
+                                <div class="friend-status">2 hours ago</div>
+                            </div>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-avatar" style="background: var(--info);">
+                                <i class="fas fa-comment"></i>
+                            </div>
+                            <div class="friend-info">
+                                <div class="friend-name">Posted in Chat</div>
+                                <div class="friend-status">5 hours ago</div>
+                            </div>
+                        </div>
+                        <div class="friend-item">
+                            <div class="friend-avatar" style="background: var(--primary);">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <div class="friend-info">
+                                <div class="friend-name">Downloaded Contacts</div>
+                                <div class="friend-status">1 day ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="profile-body">
-      <div class="section-title">Profile Information</div>
-      <div class="profile-details">
-        <div class="detail-item">
-          <div class="detail-label">Full Name</div>
-          <div class="detail-value"><%= profileUser.profile?.name || 'Not provided' %></div>
+    <div class="modal" id="suspendModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="suspendModalTitle">Suspend User</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="suspendModalMessage">Are you sure you want to suspend this user? They will be unable to use the platform until unsuspended.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel">Cancel</button>
+                <button class="modal-btn confirm" id="confirmSuspend">Suspend</button>
+            </div>
         </div>
-        <div class="detail-item">
-          <div class="detail-label">Phone Number</div>
-          <div class="detail-value"><%= profileUser.profile?.phone || 'Not provided' %></div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Status</div>
-          <div class="detail-value">
-            <span class="<%= profileUser.status === 'active' ? 'text-green-600' : profileUser.status === 'suspended' ? 'text-yellow-600' : 'text-red-600' %>">
-              <%= profileUser.status.charAt(0).toUpperCase() + profileUser.status.slice(1) %>
-            </span>
-          </div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">Member Since</div>
-          <div class="detail-value"><%= new Date(profileUser.createdAt).toLocaleDateString() %></div>
-        </div>
-      </div>
-
-      <div class="section-title">Bio</div>
-      <div class="bio-content"><%= profileUser.profile?.bio || 'No bio provided' %></div>
-
-      <div class="section-title">Statistics</div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-value"><%= (await Session.countDocuments({ userId: profileUser._id })) || 0 %></div>
-          <div class="stat-label">Sessions</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value"><%= (await Contact.countDocuments({ sessionId: { $in: (await Session.find({ userId: profileUser._id })).map(s => s.sessionId) } })) || 0 %></div>
-          <div class="stat-label">Contacts</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value"><%= (await Download.countDocuments({ sessionId: { $in: (await Session.find({ userId: profileUser._id })).map(s => s.sessionId) } })) || 0 %></div>
-          <div class="stat-label">Downloads</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value"><%= (await Message.countDocuments({ userId: profileUser._id })) || 0 %></div>
-          <div class="stat-label">Messages</div>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <script>
-    document.getElementById('messageBtn').addEventListener('click', () => {
-      window.location.href = `/private-chat/<%= profileUser._id %>`;
-    });
-    <% if (currentUser._id.toString() === profileUser._id.toString()) { %>
-      document.getElementById('editProfileBtn').addEventListener('click', () => {
-        window.location.href = '/edit-profile';
-      });
-    <% } %>
-  </script>
+    <div class="modal" id="deleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Delete User</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this user? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel">Cancel</button>
+                <button class="modal-btn confirm" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        // Initialize particles.js for profile background
+        particlesJS('profile-particles', {
+            particles: {
+                number: {
+                    value: 60,
+                    density: {
+                        enable: true,
+                        value_area: 800
+                    }
+                },
+                color: {
+                    value: '#6366f1'
+                },
+                shape: {
+                    type: 'circle',
+                    stroke: {
+                        width: 0,
+                        color: '#000000'
+                    }
+                },
+                opacity: {
+                    value: 0.5,
+                    random: true,
+                    anim: {
+                        enable: true,
+                        speed: 1,
+                        opacity_min: 0.1,
+                        sync: false
+                    }
+                },
+                size: {
+                    value: 3,
+                    random: true,
+                    anim: {
+                        enable: false,
+                        speed: 40,
+                        size_min: 0.1,
+                        sync: false
+                    }
+                },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: '#6366f1',
+                    opacity: 0.2,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 2,
+                    direction: 'none',
+                    random: false,
+                    straight: false,
+                    out_mode: 'out',
+                    bounce: false,
+                    attract: {
+                        enable: false,
+                        rotateX: 600,
+                        rotateY: 1200
+                    }
+                }
+            },
+            interactivity: {
+                detect_on: 'canvas',
+                events: {
+                    onhover: {
+                        enable: true,
+                        mode: 'grab'
+                    },
+                    onclick: {
+                        enable: true,
+                        mode: 'push'
+                    },
+                    resize: true
+                },
+                modes: {
+                    grab: {
+                        distance: 140,
+                        line_linked: {
+                            opacity: 0.5
+                        }
+                    },
+                    bubble: {
+                        distance: 400,
+                        size: 40,
+                        duration: 2,
+                        opacity: 0.8,
+                        speed: 3
+                    },
+                    repulse: {
+                        distance: 200,
+                        duration: 0.4
+                    },
+                    push: {
+                        particles_nb: 4
+                    },
+                    remove: {
+                        particles_nb: 2
+                    }
+                }
+            },
+            retina_detect: true
+        });
+        
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
+        // Modal functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const userId = '<%= profileUser ? profileUser._id : "" %>';
+            const currentUserIsAdmin = <%= user && user.isAdmin ? 'true' : 'false' %>;
+            const currentUserId = '<%= user ? user._id : "" %>';
+            const profileUserId = '<%= profileUser ? profileUser._id : "" %>';
+            const isSuperAdmin = <%= user && user.isSuperAdmin ? 'true' : 'false' %>;
+            
+            // Modal elements
+            const suspendModal = document.getElementById('suspendModal');
+            const deleteModal = document.getElementById('deleteModal');
+            const suspendModalTitle = document.getElementById('suspendModalTitle');
+            const suspendModalMessage = document.getElementById('suspendModalMessage');
+            const confirmSuspend = document.getElementById('confirmSuspend');
+            const confirmDelete = document.getElementById('confirmDelete');
+            
+            // Close modal when clicking on close button or outside modal
+            document.querySelectorAll('.modal-close, .modal').forEach(element => {
+                element.addEventListener('click', function(e) {
+                    if (e.target === this || e.target.classList.contains('modal-close')) {
+                        this.closest('.modal').classList.remove('active');
+                    }
+                });
+            });
+            
+            // Admin action handlers
+            if (currentUserIsAdmin && currentUserId !== profileUserId) {
+                const suspendUserBtn = document.getElementById('suspendUserBtn');
+                const unsuspendUserBtn = document.getElementById('unsuspendUserBtn');
+                const deleteUserBtn = document.getElementById('deleteUserBtn');
+                
+                if (suspendUserBtn) {
+                    suspendUserBtn.addEventListener('click', function() {
+                        suspendModalTitle.textContent = 'Suspend User';
+                        suspendModalMessage.textContent = 'Are you sure you want to suspend this user? They will be unable to use the platform until unsuspended.';
+                        suspendModal.classList.add('active');
+                        
+                        confirmSuspend.onclick = function() {
+                            fetch(`/admin/user/${userId}/toggle-suspend`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    suspendModal.classList.remove('active');
+                                    location.reload();
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error suspending user:', error);
+                                alert('Failed to suspend user');
+                            });
+                        };
+                    });
+                }
+                
+                if (unsuspendUserBtn) {
+                    unsuspendUserBtn.addEventListener('click', function() {
+                        suspendModalTitle.textContent = 'Unsuspend User';
+                        suspendModalMessage.textContent = 'Are you sure you want to unsuspend this user? They will regain access to the platform.';
+                        suspendModal.classList.add('active');
+                        
+                        confirmSuspend.onclick = function() {
+                            fetch(`/admin/user/${userId}/toggle-suspend`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    suspendModal.classList.remove('active');
+                                    location.reload();
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error unsuspending user:', error);
+                                alert('Failed to unsuspend user');
+                            });
+                        };
+                    });
+                }
+                
+                if (deleteUserBtn) {
+                    deleteUserBtn.addEventListener('click', function() {
+                        deleteModal.classList.add('active');
+                        
+                        confirmDelete.onclick = function() {
+                            fetch(`/admin/user/${userId}/delete`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    deleteModal.classList.remove('active');
+                                    window.location.href = '/admin';
+                                } else {
+                                    alert(data.message || 'Failed to delete user');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error deleting user:', error);
+                                alert('Failed to delete user');
+                            });
+                        };
+                    });
+                }
+            }
+            
+            // Command suggestion functionality
+            const messageInput = document.getElementById('messageInput');
+            if (messageInput) {
+                messageInput.addEventListener('input', function() {
+                    const input = this.value.toLowerCase();
+                    const commandSuggestion = document.getElementById('commandSuggestion');
+                    
+                    if (input.startsWith('/') || input.startsWith('@')) {
+                        commandSuggestion.style.display = 'block';
+                        
+                        // Filter commands based on input
+                        document.querySelectorAll('.command-item').forEach(item => {
+                            const command = item.dataset.command.toLowerCase();
+                            if (command.includes(input)) {
+                                item.style.display = 'block';
+                            } else {
+                                item.style.display = 'none';
+                            }
+                        });
+                    } else {
+                        commandSuggestion.style.display = 'none';
+                    }
+                });
+                
+                document.querySelectorAll('.command-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        messageInput.value = this.dataset.command + ' ';
+                        messageInput.focus();
+                        document.getElementById('commandSuggestion').style.display = 'none';
+                    });
+                });
+            }
+            
+            // Initialize typing indicator
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                let typingTimeout;
+                
+                messageInput.addEventListener('input', function() {
+                    clearTimeout(typingTimeout);
+                    
+                    if (this.value.length > 0) {
+                        socket.emit('typing', {
+                            userId: currentUserId,
+                            username: '<%= user ? user.username : "" %>',
+                            isTyping: true
+                        });
+                        
+                        typingTimeout = setTimeout(() => {
+                            socket.emit('typing', {
+                                userId: currentUserId,
+                                username: '<%= user ? user.username : "" %>',
+                                isTyping: false
+                            });
+                        }, 3000);
+                    } else {
+                        socket.emit('typing', {
+                            userId: currentUserId,
+                            username: '<%= user ? user.username : "" %>',
+                            isTyping: false
+                        });
+                    }
+                });
+            }
+            
+            // Format uptime
+            function formatUptime(seconds) {
+                const days = Math.floor(seconds / (24 * 3600));
+                seconds %= 24 * 3600;
+                const hours = Math.floor(seconds / 3600);
+                seconds %= 3600;
+                const minutes = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                
+                return `${days}d ${hours}h ${minutes}m ${secs}s`;
+            }
+            
+            // Format memory usage
+            function formatMemoryUsage() {
+                const total = (process.memoryUsage().heapTotal / 1024 / 1024).toFixed(2);
+                const used = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
+                return `${used} GB / ${total} GB`;
+            }
+            
+            // Update AI response with current info
+            const aiContent = document.querySelector('.ai-content pre');
+            if (aiContent) {
+                const now = new Date();
+                const uptime = formatUptime(process.uptime());
+                const memory = formatMemoryUsage();
+                
+                aiContent.textContent = `╭══〘〘 Contact Gain Bot 〙〙═⊷
+┃❍ Prefix: /
+┃❍ Owner: @${process.env.ADMIN_USERNAME}
+┃❍ Plugins: 25
+┃❍ Version: 5.0.0
+┃❍ Uptime: ${uptime}
+┃❍ Time Now: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+┃❍ Date Today: ${now.toLocaleDateString()}
+┃❍ Time Zone: Africa/Lagos
+┃❍ Server RAM: ${memory}
+╰═════════════════════════════`;
+            }
+        });
+    </script>
 </body>
 </html>
