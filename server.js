@@ -99,7 +99,7 @@ async function createDefaultAdmins() {
       });
     }
 
-    // Super admin
+    // Super admin 🙂😁
     const superAdmin = await User.findOne({ username: process.env.SUPER_ADMIN_USERNAME });
     if (!superAdmin) {
       const salt = bcrypt.genSaltSync(10);
@@ -127,6 +127,7 @@ app.use(session({
   saveUninitialized: false,
   store: MongoStore.create({ 
     mongoUrl: process.env.MONGO_URL,
+    collectionName: 'express_sessions', // Fixed here
     ttl: 24 * 60 * 60 // 24 hours
   }),
   cookie: { 
@@ -547,7 +548,7 @@ app.get('/session/:sessionId/download', async (req, res) => {
       sessionId,
       status: 'success'
     });
-    await download.save();
+    awaits download.save();
     
     res.setHeader('Content-Type', 'text/vcard; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
